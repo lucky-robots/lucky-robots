@@ -12,10 +12,11 @@ message ImageFrame {
     bytes data = 1;              // Raw pixel data (RGBA or compressed)
     uint32 width = 2;
     uint32 height = 3;
-    uint32 channels = 4;         // 3 for RGB, 4 for RGBA
-    string format = 5;           // "raw", "jpeg", "png"
+    uint32 channels = 4;         // 3 for RGB, 4 for RGBA, 1 for gray16 depth
+    string format = 5;           // "raw", "jpeg", "png", "gray16" (depth)
     uint64 timestamp_ms = 6;     // Timestamp in milliseconds
     uint32 frame_number = 7;
+    float depth_scale = 8;       // Depth frames only: metres per uint16 code (0 for color)
 }
 
 // Named image payload for observation snapshots.

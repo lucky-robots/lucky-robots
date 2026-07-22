@@ -5,7 +5,7 @@ import warnings
 
 from . import agent_pb2 as agent__pb2
 
-GRPC_GENERATED_VERSION = '1.80.0'
+GRPC_GENERATED_VERSION = '1.82.1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -25,7 +25,7 @@ if _version_not_supported:
     )
 
 
-class AgentServiceStub(object):
+class AgentServiceStub:
     """RL training, policy / RobotController control, contract negotiation.
     """
 
@@ -192,7 +192,7 @@ class AgentServiceStub(object):
                 _registered_method=True)
 
 
-class AgentServiceServicer(object):
+class AgentServiceServicer:
     """RL training, policy / RobotController control, contract negotiation.
     """
 
@@ -574,7 +574,7 @@ def add_AgentServiceServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class AgentService(object):
+class AgentService:
     """RL training, policy / RobotController control, contract negotiation.
     """
 

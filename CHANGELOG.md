@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.4.0 (2026-07-21) — LiDAR support + camera depth (RGBD)
+
+The headline of this release is **first-class LiDAR support**. You can now turn a
+scene's LiDAR sensors on, read full range scans back over gRPC, and size your
+buffers ahead of time — all without setting up a recording. Alongside it, cameras
+can stream live **metric depth**, so a single camera gives you both color and
+per-pixel distance (RGBD).
+
+Everything here is wire-compatible with the engine you're already running — there's
+nothing to upgrade on the engine side to start using it.
+
+### Added
+
+- **LiDAR API** — a new `client.lidar` service, with friendly wrappers:
+  - `client.set_lidar_live(live=True)` — start (or stop) firing the LiDAR every
+    step, so you can read scans even when you aren't recording. The setting sticks
+    across resets, so you only need to call it once.
+  - `client.get_lidar_scan(sensor=0, material=False, want_secondary=False)` — read a
+    scan for a sensor (0-based). You get back `beams` (channels × azimuth bins),
+    `ranges` in metres (`-1.0` means "no return"), and `secondary_ranges` when you
+    ask for them.
+  - `client.get_lidar_beam_count(sensor=0)` — how many beams a sensor produces
+    (channels × azimuth bins); handy for pre-allocating arrays.
+- **Camera depth (RGBD)** — `configure_cameras([...])` now accepts `kind="color"`
+  (the default) or `kind="depth"`, plus a `format` (`"raw"`, or `"jpeg"` for color).
+  Depth frames are packed as `gray16le`; turn a pixel into metres with
+  `metres = code * depth_scale`, where `depth_scale` comes back on each frame.
+
+### Usage
+
+```python
+# LiDAR — read a live scan between episodes
+client.set_lidar_live(True)          # fire the sensor every step
+n = client.get_lidar_beam_count()    # size your buffers up front
+scan = client.get_lidar_scan()       # scan.ranges are metres, -1.0 = no return
+
+# Camera depth — ask a camera for metric depth instead of color
+client.configure_cameras([{"name": "front_cam", "kind": "depth"}])
+```
+
+Call the LiDAR reads while the simulation is idle — like the other scene-inspection
+calls (`list_cameras`, `get_full_state`, …), not from inside an active `step()` loop.
+
 ## 0.3.0 (2026-05-05) — Runtime gain override, scene reset, editor play/stop
 
 Tracks the LuckyEngine `mick/policy-fixes` branch — runtime PD/scale tuning,

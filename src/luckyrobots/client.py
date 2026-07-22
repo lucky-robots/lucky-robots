@@ -37,6 +37,8 @@ try:
     from .grpc.generated import viewport_pb2  # type: ignore
     from .grpc.generated import viewport_pb2_grpc  # type: ignore
     from .grpc.generated import media_pb2  # type: ignore
+    from .grpc.generated import lidar_pb2  # type: ignore
+    from .grpc.generated import lidar_pb2_grpc  # type: ignore
 except Exception as e:  # pragma: no cover
     raise ImportError(
         "Missing generated gRPC stubs. Regenerate them from the protos in "
@@ -110,6 +112,7 @@ class LuckyEngineClient:
         self._debug = None
         self._telemetry = None
         self._viewport = None
+        self._lidar = None
 
         # Additional user-registered stubs (see register_stub).
         self._extra_stubs: dict[str, Any] = {}
@@ -132,6 +135,7 @@ class LuckyEngineClient:
             telemetry=telemetry_pb2,
             viewport=viewport_pb2,
             media=media_pb2,
+            lidar=lidar_pb2,
         )
 
     def connect(self) -> None:
@@ -158,6 +162,7 @@ class LuckyEngineClient:
         self._debug = None
         self._telemetry = None
         self._viewport = None
+        self._lidar = None
         self._extra_stubs: dict[str, Any] = {}
 
         logger.info(f"Channel opened to {target} (server not verified yet)")
@@ -331,6 +336,13 @@ class LuckyEngineClient:
             self._viewport = viewport_pb2_grpc.ViewportServiceStub(self.channel)
         return self._viewport
 
+    @property
+    def lidar(self) -> Any:
+        """LidarService stub (lazy) — material-aware lidar scans for training clients."""
+        if self._lidar is None:
+            self._lidar = lidar_pb2_grpc.LidarServiceStub(self.channel)
+        return self._lidar
+
     # ── Extension seam for user-provided services ──
 
     def register_stub(self, name: str, stub_class: Any) -> Any:
@@ -389,15 +401,71 @@ class LuckyEngineClient:
                 name: Camera entity name in the scene.
                 width: Desired image width (0 = native resolution).
                 height: Desired image height (0 = native resolution).
+                kind: "color" (default) or "depth". Depth frames carry live
+                    metric depth packed as gray16le; convert to metres with
+                    metres = code * depth_scale. Requires a camera configured
+                    for depth capture.
+                format: "raw" (default) or "jpeg" (color only).
         """
+        kinds = {
+            "color": self.pb.agent.CAMERA_STREAM_COLOR,
+            "depth": self.pb.agent.CAMERA_STREAM_DEPTH,
+        }
         self._camera_requests = [
             self.pb.agent.GetCameraFrameRequest(
                 name=c["name"],
                 width=c.get("width", 0),
                 height=c.get("height", 0),
+                format=c.get("format", ""),
+                kind=kinds[c.get("kind", "color")],
             )
             for c in cameras
         ]
+
+    # ── LiDAR ──
+
+    def set_lidar_live(self, live: bool = True, timeout: float | None = None):
+        """Keep the lidar firing every step, even when you're not recording.
+
+        Call this once before polling scans with get_lidar_scan(); the setting
+        persists across resets. Like the other scene-inspection calls
+        (list_cameras, get_full_state, ...), run it while the simulation is idle —
+        not from inside an active step() loop.
+        """
+        timeout = timeout or self.timeout
+        return self.lidar.SetLidarLive(
+            self.pb.lidar.SetLidarLiveRequest(live=live), timeout=timeout
+        )
+
+    def get_lidar_scan(
+        self,
+        sensor: int = 0,
+        material: bool = False,
+        want_secondary: bool = False,
+        timeout: float | None = None,
+    ):
+        """Read a lidar scan for the given sensor index (0-based).
+
+        Returns a LidarScanResponse: ``beams`` (channels * azimuth_bins), ``ranges``
+        (metres per beam, ``-1.0`` = no return), and ``secondary_ranges`` when
+        ``want_secondary``. Call ``set_lidar_live(True)`` once first, then read scans
+        while the simulation is idle — like the other scene-inspection calls,
+        not from inside an active step() loop.
+        """
+        timeout = timeout or self.timeout
+        return self.lidar.GetLidarScan(
+            self.pb.lidar.GetLidarScanRequest(
+                sensor=sensor, material=material, want_secondary=want_secondary
+            ),
+            timeout=timeout,
+        )
+
+    def get_lidar_beam_count(self, sensor: int = 0, timeout: float | None = None) -> int:
+        """Number of beams (channels * azimuth_bins) for the given lidar sensor."""
+        timeout = timeout or self.timeout
+        return self.lidar.GetLidarBeamCount(
+            self.pb.lidar.LidarSensorRequest(sensor=sensor), timeout=timeout
+        ).beams
 
     def list_cameras(self, timeout: float | None = None) -> list[dict]:
         """List available cameras in the scene.

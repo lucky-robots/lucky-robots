@@ -370,6 +370,37 @@ client.configure_cameras([{"name": "FrontCam", "width": 640, "height": 480}])
 obs = client.step(actions=[...])                           # obs.camera_frames is populated
 ```
 
+## Reading LiDAR + camera depth
+
+Beyond color frames, the engine can stream **LiDAR range scans** and **metric camera depth** to the client.
+
+Turn the lidar on, then poll a scan whenever the sim is idle:
+
+```python
+from luckyrobots import LuckyEngineClient
+
+client = LuckyEngineClient()
+client.connect()
+client.wait_for_server(timeout=30.0)
+
+client.set_lidar_live(True)                     # fire the lidar every step; persists across resets
+
+scan = client.get_lidar_scan(sensor=0)          # 0-based sensor index
+print(scan.beams, "beams")                      # beam count = channels * azimuth_bins
+print(list(scan.ranges)[:8])                    # metres per beam; -1.0 = no return
+```
+
+`get_lidar_scan(sensor=0, material=False, want_secondary=False)` can also return material-aware ranges and optional secondary (ghost) returns behind glass or water (`scan.secondary_ranges`). Pick a sensor preset (generic, Unitree L1, Livox Mid-360, Ouster OS1), tune the return model, or read per-beam angles through the `client.lidar` stub; `client.get_lidar_beam_count(sensor=0)` reports the beam count up front. Call these while the simulation is idle — like `list_cameras` / `get_full_state` and the other scene-inspection calls — not from inside an active `step()` loop.
+
+Depth cameras use the same capture path as color — just ask `configure_cameras` for a depth stream:
+
+```python
+client.configure_cameras([{"name": "FrontCam", "kind": "depth"}])
+obs = client.step(actions=[...])                # obs.camera_frames now holds a depth frame
+```
+
+Depth frames are encoded as `gray16le` — each 16-bit code converts to metres with the depth scale (`metres = code * depth_scale`).
+
 ## Task-contract API
 
 The contract surface is what makes `LuckyEnv` work — and you can use it directly for custom training stacks.

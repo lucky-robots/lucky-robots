@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+// LiDAR service definitions for the LuckyEngine gRPC API (v1).
+//
+// Material-aware LiDAR for training clients: configure the sensor and its return
+// model, bake or load the scene material, then read each scan — either clean or
+// "dirtied" by the material model — as the simulation runs. Scans come from the
+// sensor's live in-memory returns; the material path additionally samples a baked
+// scene-material lookup and applies the return/noise model.
+
+package hazel.rpc;
+
+option cc_enable_arenas = true;
+
+message LidarAck {
+    bool ok = 1;
+    string message = 2;
+}
+
+// Which lidar sensor on the scene (0-based).
+message LidarSensorRequest {
+    uint32 sensor = 1;
+}
+
+message SetLidarLiveRequest {
+    bool live = 1;                 // fire the lidar every step even when not recording
+}
+
+message SetLidarConfigRequest {
+    uint32 sensor = 1;
+    uint32 scan_pattern = 2;       // 0 = spinning uniform, 1 = Livox non-repetitive
+    uint32 channels = 3;
+    uint32 azimuth_bins = 4;
+    float  vfov_min_deg = 5;
+    float  vfov_max_deg = 6;
+    float  min_range = 7;
+    float  max_range = 8;
+    float  rotation_hz = 9;
+    uint32 geom_group_mask = 10;   // 6-bit MuJoCo geom-group mask
+    uint32 self_ignore = 11;       // 0 = none, 1 = mount body, 2 = robot tree
+}
+
+message LidarConfigResponse {
+    bool   found = 1;
+    uint32 scan_pattern = 2;
+    uint32 channels = 3;
+    uint32 azimuth_bins = 4;
+    float  vfov_min_deg = 5;
+    float  vfov_max_deg = 6;
+    float  min_range = 7;
+    float  max_range = 8;
+    float  rotation_hz = 9;
+    uint32 geom_group_mask = 10;
+    uint32 self_ignore = 11;
+}
+
+// Return / noise model parameters (range falloff, reflectivity, and per-beam noise).
+message SetLidarReturnParamsRequest {
+    float max_range_at_ref = 1;
+    float ref_reflectivity = 2;
+    float range_exp = 3;
+    float noise_sigma0 = 4;
+    float grazing_cos_cutoff = 5;
+    float intensity_ref_range = 6;
+    float detect_floor = 7;
+    float near_range_r0 = 8;
+    float noise_slope_per_m = 9;
+}
+
+message SetLidarPresetRequest {
+    uint32 preset = 1;             // 0 = generic, 1 = Unitree L1, 2 = Livox Mid-360, 3 = Ouster OS1
+}
+
+message BakeLidarMaterialRequest {
+    float cell_size = 1;           // voxel size in metres
+}
+
+message LoadLidarBakeRequest {
+    string name = 1;               // MaterialBakes/<name>.lvxb (default "scene")
+}
+
+message SaveLidarBakeRequest {
+    string name = 1;               // MaterialBakes/<name>.lvxb (default "scene")
+}
+
+message GetLidarScanRequest {
+    uint32 sensor = 1;
+    bool   material = 2;           // true = dirty the ranges via the baked material LUT + return model
+    bool   want_secondary = 3;     // also fill secondary_ranges (glass/water ghost behind the first hit)
+}
+
+message LidarScanResponse {
+    uint32 beams = 1;                          // channels * azimuth_bins
+    repeated float ranges = 2 [packed = true]; // metres per beam; -1 = no return
+    // Opt-in multi-return: secondary (ghost) range per beam behind a glass/clear-water first hit; -1 = none.
+    // Empty unless the request set want_secondary. Same length as `ranges` when present.
+    repeated float secondary_ranges = 3 [packed = true];
+}
+
+message LidarBeamCountResponse {
+    uint32 beams = 1;
+}
+
+// Per-beam azimuth/elevation (radians) so a client can unwrap the flat scan into an az/el image
+// (e.g. comparing a clean scan against its material-dirtied version).
+message LidarBeamAnglesResponse {
+    uint32 beams = 1;
+    repeated float azimuth = 2 [packed = true];    // atan2(y, x), [-pi, pi]
+    repeated float elevation = 3 [packed = true];  // asin(z),     [-pi/2, pi/2]
+}
+
+// Material-aware lidar control + observation for external (any-language) training clients.
+service LidarService {
+    rpc SetLidarLive(SetLidarLiveRequest) returns (LidarAck);
+    rpc SetLidarConfig(SetLidarConfigRequest) returns (LidarAck);
+    rpc GetLidarConfig(LidarSensorRequest) returns (LidarConfigResponse);
+    rpc SetLidarReturnParams(SetLidarReturnParamsRequest) returns (LidarAck);
+    rpc SetLidarPreset(SetLidarPresetRequest) returns (LidarAck);
+    rpc BakeLidarMaterial(BakeLidarMaterialRequest) returns (LidarAck);
+    rpc LoadLidarBake(LoadLidarBakeRequest) returns (LidarAck);
+    rpc SaveLidarBake(SaveLidarBakeRequest) returns (LidarAck);
+    rpc GetLidarScan(GetLidarScanRequest) returns (LidarScanResponse);
+    rpc GetLidarBeamCount(LidarSensorRequest) returns (LidarBeamCountResponse);
+    rpc GetLidarBeamAngles(LidarSensorRequest) returns (LidarBeamAnglesResponse);
+}

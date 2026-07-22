@@ -74,6 +74,25 @@ Reset agents during training or control loops:
     if resp.success:
         print(f"Agent 'agent_0' reset successful: {resp.message}")
 
+Reading a LiDAR Scan
+--------------------
+
+Read range scans from a LiDAR sensor. Enable live scanning first, then poll a
+scan while the simulation is idle (not inside an active ``step()`` loop):
+
+.. code-block:: python
+
+    from luckyrobots import LuckyEngineClient
+
+    client = LuckyEngineClient(host="127.0.0.1", port=50051)
+    client.connect()
+    client.wait_for_server(timeout=30.0)
+
+    client.set_lidar_live(True)              # fire the lidar every step
+    scan = client.get_lidar_scan(sensor=0)   # 0-based sensor index
+    print(scan.beams, "beams")               # channels * azimuth_bins
+    print(list(scan.ranges)[:8])             # metres per beam; -1.0 = no return
+
 Command Line Usage
 ------------------
 

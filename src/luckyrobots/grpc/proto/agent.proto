@@ -112,6 +112,15 @@ message AgentFrame {
 // Observation RPC (single-shot snapshot)
 // =============================================================================
 
+// Which stream to capture for a camera frame.
+//   COLOR = the rendered RGBA color image (default).
+//   DEPTH = per-pixel metric depth, packed gray16le (2 bytes/pixel, little-endian). Convert a
+//           uint16 code to metres with `metres = code * ImageFrame.depth_scale`.
+enum CameraStreamKind {
+    CAMERA_STREAM_COLOR = 0;
+    CAMERA_STREAM_DEPTH = 1;
+}
+
 // Single-shot camera snapshot request (mirrors StreamCameraRequest without fps).
 message GetCameraFrameRequest {
     oneof identifier {
@@ -122,6 +131,7 @@ message GetCameraFrameRequest {
     uint32 width = 3;            // Desired width (0 = native)
     uint32 height = 4;           // Desired height (0 = native)
     string format = 5;           // "raw", "jpeg" (default: raw)
+    CameraStreamKind kind = 6;   // COLOR (default) or DEPTH (live metric depth, gray16le)
 }
 
 // Single-shot viewport snapshot request (mirrors StartViewportStreamRequest without fps).
