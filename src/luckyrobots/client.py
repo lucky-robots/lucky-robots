@@ -382,10 +382,10 @@ class LuckyEngineClient:
     def discover_services(self) -> list[str]:
         """Ask the server which gRPC services it advertises.
 
-        Uses ``grpc.reflection.v1alpha.ServerReflection``. Requires the engine
-        to be built with reflection enabled (default in the v0.2.0+ LuckyEngine
-        server). The standard reflection service itself is filtered out of the
-        result.
+        Uses ``grpc.reflection.v1alpha.ServerReflection``, which LuckyEngine
+        builds enable by default; a server built without it raises rather than
+        returning an empty list. The standard reflection service itself is
+        filtered out of the result.
         """
         from . import reflection as _reflection
 
@@ -405,7 +405,10 @@ class LuckyEngineClient:
                     metric depth packed as gray16le; convert to metres with
                     metres = code * depth_scale. Requires a camera configured
                     for depth capture.
-                format: "raw" (default) or "jpeg" (color only).
+                format: Declared by the schema as "raw" or "jpeg", but the engine
+                    has no encoder — frames always come back uncompressed (RGBA
+                    bytes for color, gray16le for depth). Use width/height to
+                    control bandwidth.
         """
         kinds = {
             "color": self.pb.agent.CAMERA_STREAM_COLOR,
@@ -442,6 +445,7 @@ class LuckyEngineClient:
         sensor: int = 0,
         material: bool = False,
         want_secondary: bool = False,
+        want_intensity: bool = False,
         timeout: float | None = None,
     ):
         """Read a lidar scan for the given sensor index (0-based).
@@ -451,11 +455,22 @@ class LuckyEngineClient:
         ``want_secondary``. Call ``set_lidar_live(True)`` once first, then read scans
         while the simulation is idle — like the other scene-inspection calls,
         not from inside an active step() loop.
+
+        ``want_intensity`` additionally fills ``intensity`` and
+        ``reflectivity_calibrated`` (``-1.0`` where the bake had no material for that
+        hit, so the geometry is kept but the material is unknown). Both need
+        ``material=True`` to mean anything — without the material model there is no
+        return strength to report, only geometry. ``intensity`` is what the receiver
+        saw, so it carries 1/R² falloff; ``reflectivity_calibrated`` divides that back
+        out and is the channel to compare across ranges when judging materials.
         """
         timeout = timeout or self.timeout
         return self.lidar.GetLidarScan(
             self.pb.lidar.GetLidarScanRequest(
-                sensor=sensor, material=material, want_secondary=want_secondary
+                sensor=sensor,
+                material=material,
+                want_secondary=want_secondary,
+                want_intensity=want_intensity,
             ),
             timeout=timeout,
         )
@@ -466,6 +481,84 @@ class LuckyEngineClient:
         return self.lidar.GetLidarBeamCount(
             self.pb.lidar.LidarSensorRequest(sensor=sensor), timeout=timeout
         ).beams
+
+    def set_lidar_secondary_capture(
+        self,
+        capture: int = 0,
+        scope: int = 0,
+        sensor: int = 0,
+        timeout: float | None = None,
+    ):
+        """Control multi-return: what the beam does after its first hit.
+
+        ``capture``: 0 = off, 1 = pass-through (glass → wall, canopy → ground),
+        2 = reflected (the mirror fold), 3 = both.
+
+        ``scope``: 0 = only where the hit surface's material says it could matter —
+        primarily the authored material's continuation class (glass, a scattering
+        medium or a porous surface for pass-through; a specular surface for the fold),
+        falling back to the geom's MuJoCo material (translucent alpha, non-zero
+        reflectance) where nothing was authored. Much faster, and the default.
+        1 = every hit, material-agnostic.
+
+        Scope 0 is the right choice in an authored scene. Prefer 1 only for geometry
+        that carries neither hint — a collision-only geom with no visual mesh behind it
+        and no informative material in the model xml — since the filter has nothing to
+        key off there and would skip the surfaces you care about.
+        """
+        timeout = timeout or self.timeout
+        return self.lidar.SetLidarSecondaryCapture(
+            self.pb.lidar.SetLidarSecondaryCaptureRequest(
+                sensor=sensor, capture=capture, scope=scope
+            ),
+            timeout=timeout,
+        )
+
+    def bake_lidar_material(
+        self,
+        cell_size: float = 0.0,
+        max_dim: int = 0,
+        splat_radius: int = 0,
+        include_hidden: int = 0,
+        timeout: float | None = None,
+    ):
+        """Build the voxel bake that maps a MuJoCo collision hit back to its Hazel material.
+
+        Every argument falls back to the scene's own setting when left at 0, so
+        ``bake_lidar_material()`` just rebuilds with the authored settings.
+        ``splat_radius`` is the one worth setting explicitly: at 0 the bake fills only
+        the cells a triangle crosses while the lookup is nearest-cell, which measured
+        27.5% of rays missing the bake against 1.3% at radius 1. Pass ``-1`` to mean a
+        genuine radius of 0. ``include_hidden``: 0 = scene setting, 1 = include, 2 = exclude.
+
+        Baking walks the scene, so run it while the simulation is idle. Check the result
+        with ``get_lidar_bake_status()``.
+        """
+        timeout = timeout or self.timeout
+        return self.lidar.BakeLidarMaterial(
+            self.pb.lidar.BakeLidarMaterialRequest(
+                cell_size=cell_size,
+                max_dim=max_dim,
+                splat_radius=splat_radius,
+                include_hidden=include_hidden,
+            ),
+            timeout=timeout,
+        )
+
+    def get_lidar_bake_status(self, sensor: int = 0, timeout: float | None = None):
+        """What the current material bake contains, and whether it can still be trusted.
+
+        Returns a LidarBakeStatusResponse: ``valid``, ``format_version``, ``cell_size_m``,
+        ``splat_radius``, ``dim_x/y/z``, ``filled_cells``, ``geom_materials`` (0 means
+        positional lookup only), ``material_fingerprint``, and ``stale``.
+
+        ``stale`` is the one to check before trusting material channels: a stale bake
+        still answers, but it reports the materials as they were when it was baked.
+        """
+        timeout = timeout or self.timeout
+        return self.lidar.GetLidarBakeStatus(
+            self.pb.lidar.LidarSensorRequest(sensor=sensor), timeout=timeout
+        )
 
     def list_cameras(self, timeout: float | None = None) -> list[dict]:
         """List available cameras in the scene.
@@ -482,6 +575,45 @@ class LuckyEngineClient:
             {"name": c.name, "id": c.id.id}
             for c in resp.cameras
         ]
+
+    def get_camera_config(self, name: str, timeout: float | None = None):
+        """Read a camera's capture + depth-sensor configuration.
+
+        Returns a CameraConfigResponse with ``found`` and ``config``. The config covers
+        resolution, whether mask/depth are recorded, ``depth_scale`` (metres per uint16
+        code), the depth ``sensor_model`` (0 = clean z-buffer, 1 = ActiveStereo,
+        2 = iToF, 3 = StructuredLight, 4 = dToFSparse) with its calibration, and
+        ``debug_channel``.
+        """
+        timeout = timeout or self.timeout
+        return self.camera.GetCameraConfig(
+            self.pb.camera.GetCameraConfigRequest(name=name), timeout=timeout
+        )
+
+    def set_camera_config(self, name: str, config, timeout: float | None = None):
+        """Write a camera's configuration back.
+
+        Pass a full CameraConfig — the simplest safe way is to read one with
+        ``get_camera_config()``, copy it, change the fields you want, and send it back::
+
+            cfg = client.get_camera_config("front_camera").config
+            new = client.pb.camera.CameraConfig(); new.CopyFrom(cfg)
+            new.debug_channel = 8            # continuation class
+            client.set_camera_config("front_camera", new)
+
+        ``debug_channel`` is a DIAGNOSTIC selector, not a depth option. At 0 the camera
+        records depth. Anything else replaces the per-pixel range with an internal term
+        of the sensor model — 1 = backscatter, 2 = incidence cosine, 3 = NIR
+        reflectivity, 4 = transparent surface depth, 5 = metalness, 6 = roughness,
+        7 = transmission suppression, 8 = continuation class, 9 = stereo occlusion
+        reject. Such a stream is NOT a depth map; a recording made with one set says so
+        in its info.json. Set it back to 0 when you are done looking.
+        """
+        timeout = timeout or self.timeout
+        return self.camera.SetCameraConfig(
+            self.pb.camera.SetCameraConfigRequest(name=name, config=config),
+            timeout=timeout,
+        )
 
     # ── Multi-policy action groups ──
 
@@ -860,6 +992,7 @@ class LuckyEngineClient:
                 height=nf.frame.height,
                 channels=nf.frame.channels,
                 frame_number=nf.frame.frame_number,
+                depth_scale=nf.frame.depth_scale,
             )
             for nf in resp.camera_frames
         ]
@@ -1287,8 +1420,8 @@ class LuckyEngineClient:
 
         Recording behaviour: recording continues across the reset by design.
         The first frame captured after the reset has the ``post_reset`` bit
-        (= 0x02) set in the new ``frame_flags`` column so consumers can drop
-        the qpos/ctrl discontinuity if needed.
+        (= 0x02) set in the ``frame_flags`` column so consumers can drop the
+        qpos/ctrl discontinuity if needed.
 
         Args:
             preserve_time: Keep ``mjData.time`` intact across the reset.
@@ -1468,7 +1601,9 @@ class LuckyEngineClient:
     def get_viewport_info(self, timeout: Optional[float] = None) -> dict:
         """List the viewports the engine exposes plus the current stream config.
 
-        On this engine branch the server reports a single ``"Main"`` viewport.
+        The engine currently reports a single viewport, ``"Main"``. Read the
+        list rather than hardcoding that name, so a multi-viewport server does
+        not silently fall back to the wrong stream.
         """
         timeout = timeout or self.timeout
         resp = self.viewport.GetViewportInfo(
@@ -1498,11 +1633,13 @@ class LuckyEngineClient:
         """Iterate over server-streamed :class:`ImageFrame` protos for a viewport.
 
         Args:
-            viewport_name: Viewport id (``"Main"`` is the only one on this
-                engine branch).
+            viewport_name: Viewport id, as returned by
+                :meth:`get_viewport_info`. The engine currently exposes only
+                ``"Main"``.
             target_fps: Desired frame rate; server may clamp.
             width / height: Desired resolution. ``0`` = native.
-            format: ``"raw"`` (RGBA bytes) or ``"jpeg"``.
+            format: Declared by the schema as ``"raw"`` or ``"jpeg"``, but the
+                engine has no encoder — frames always arrive as raw RGBA bytes.
         """
         return self.viewport.StreamViewport(
             self.pb.viewport.StartViewportStreamRequest(

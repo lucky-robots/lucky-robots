@@ -1,6 +1,6 @@
 """Visualize policy ownership in the editor via DebugService.
 
-Calls the existing `DebugService.Draw` RPC each frame to render arrows or
+Calls the `DebugService.Draw` RPC to render arrows or
 lines that highlight which joints each active PolicySlot is driving. Useful
 during multi-policy debugging to see at a glance which slot owns what.
 """
@@ -44,7 +44,7 @@ def draw_policy_overlay(
 
     Strategy:
     1. Query GetRobotController for slot list + joint claims.
-    2. For each active slot, pick a color from _SLOT_COLORS[slot.id % N].
+    2. For each active slot, pick a color from _SLOT_COLORS[slot.slot_id % N].
     3. Query GetPolicyBasePose for that slot and draw a single colored arrow
        at the policy's base pose pointing along its yaw direction.
     4. Issue a single DebugDrawRequest per call.
@@ -108,7 +108,7 @@ def draw_policy_overlay(
 
         r, g, b, a = _color_for_slot(slot.slot_id)
 
-        # Direction = yaw vector in MuJoCo XY plane. Magnitude carries the scale.
+        # Direction is the unit yaw vector in the MuJoCo XY plane; DebugArrow.scale sets the length.
         import math
 
         cy = math.cos(float(pose.yaw))

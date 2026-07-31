@@ -8,7 +8,7 @@ timestamps (or scaled by `speed`).
 Usage:
     with session.record() as rec:
         for _ in range(100):
-            robot.set_command_float("Walker", "SetVx", 0.5)
+            robot.commands("Walker")["SetVx"] = 0.5
             sess.step(...)
     rec.save("episode.parquet")   # or "episode.jsonl"
 
@@ -36,7 +36,7 @@ logger = logging.getLogger("luckyrobots.recording")
 
 # RPC name → request proto class. Populated lazily by `_build_rpc_registry`.
 _RPC_REQUEST_REGISTRY: Optional[Dict[str, type]] = None
-# Service short name → (stub class, attribute on engine_client)
+# Service short name → the attribute on engine_client holding that service's stub
 _STUB_BINDINGS = (
     ("AgentService", "agent"),
     ("MujocoSceneService", "mujoco_scene"),
@@ -148,7 +148,7 @@ class RecordedEvent:
     timestamp_s: float       # monotonic seconds since recording started
     rpc: str                 # e.g. "AgentService.SetPolicyCommandFloat"
     request_json: str        # canonical JSON of the request proto (MessageToJson)
-    response_json: Optional[str] = None  # for getters; None for setters
+    response_json: Optional[str] = None  # canonical JSON of the response; None if not serializable
 
 
 @dataclass

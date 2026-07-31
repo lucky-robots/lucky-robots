@@ -26,8 +26,10 @@ LOCK_FILE = os.path.join(tempfile.gettempdir(), "luckyengine_lock")
 class EngineProcess:
     """Manages a single LuckyEngine process lifecycle.
 
-    Encapsulates process state that was previously held in module globals.
-    A default instance is created at module level for backwards compatibility.
+    Owns the subprocess handle, its monitor thread and its shutdown event, so
+    each instance manages one engine independently. A module-level default
+    instance backs the ``launch_luckyengine`` / ``stop_luckyengine`` /
+    ``is_luckyengine_running`` helpers; construct your own to run more than one.
     """
 
     def __init__(self) -> None:
@@ -65,15 +67,25 @@ class EngineProcess:
 
         Args:
             scene: Scene name to load.
-            robot: Robot name to spawn.
+            robot: Forwarded as ``--grpc-robot``. Current engine builds do not
+                parse it, so the robot you get is the one saved in the scene.
             task: Optional task name.
             executable_path: Path to executable (auto-detected if None).
-            headless: Run without rendering.
-            windowed: Run in windowed mode (vs fullscreen).
+            headless: Forwarded as ``-Headless``. The engine matches option names
+                exactly and expects ``--headless``, so this spelling does not take
+                effect — the window still opens.
+            windowed: Accepted but currently unused — no window-mode flag is
+                passed to the engine. It launches with its own default.
             verbose: Show engine output.
-            auto_play: Automatically enter Play mode and start gRPC.
-            grpc_port: Port for the gRPC server.
-            sim_mode: Simulation time mode (realtime, deterministic, fast).
+            auto_play: Forwarded as ``--auto-play=1``, which current engine builds
+                do not parse. Enter Play mode from the editor, or launch the engine
+                with ``--server`` to bring the gRPC server up on its own.
+            grpc_port: Forwarded as ``--grpc-port``, which current engine builds do
+                not parse — the server binds the port from its own configuration
+                (50051 by default). Point Session at that port, not at this value.
+            sim_mode: Forwarded as ``--sim-mode``, which current engine builds do not
+                parse. Set the timing mode over gRPC with
+                ``SceneService.SetSimulationMode`` once connected.
 
         Returns:
             True if launch succeeded, False otherwise.
@@ -112,7 +124,9 @@ class EngineProcess:
             # The engine expects to run from the LuckyEditor/ directory with the project
             # path relative to that (e.g. "RobotSandbox/RobotSandbox.hproj").
             exe_dir = os.path.dirname(os.path.abspath(executable_path))
-            # Walk up from bin/Release-windows-x86_64/LuckyEditor/ to repo root
+            # Expects the executable at <root>/bin/<config>/LuckyEditor/, so walk up
+            # three levels to find the root that holds LuckyEditor/. Other layouts
+            # fall through to the cwd=None fallback below.
             repo_root = os.path.normpath(os.path.join(exe_dir, "..", "..", ".."))
             editor_dir = os.path.join(repo_root, "LuckyEditor")
             project_path = os.path.join("RobotSandbox", "RobotSandbox.hproj")

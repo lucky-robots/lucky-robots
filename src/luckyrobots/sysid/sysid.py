@@ -2,7 +2,8 @@
 
 Replays recorded controls in simulation, adjusts model parameters to minimize
 the difference between simulated and recorded joint positions/velocities.
-Uses scipy.optimize.least_squares (Levenberg-Marquardt / Trust Region Reflective).
+Uses scipy.optimize.least_squares with the bounded Trust Region Reflective method
+('trf'), so identified values stay inside each ParamSpec's [min_value, max_value].
 """
 
 from __future__ import annotations

@@ -19,7 +19,7 @@
 
 # Lucky Robots
 
-`luckyrobots` is the Python client for [LuckyEngine](https://github.com/luckyrobots/luckyrobots), a hyperrealistic MuJoCo-based simulator. It mirrors every gRPC surface the engine exposes — robots and policies, joints and actuators, motion graphs and IK, RL contracts, telemetry, cameras, viewports — with discovery built in. List robots, list policies, list joints with their ownership, drive policy commands, pump arbitrary actuators, train a Gymnasium env on top, record + replay sessions.
+`luckyrobots` is the Python client for LuckyEngine, a hyperrealistic MuJoCo-based simulator. It mirrors every gRPC surface the engine exposes — robots and policies, joints and actuators, motion graphs and IK, RL contracts, telemetry, cameras, viewports — with discovery built in. List robots, list policies, list joints with their ownership, drive policy commands, pump arbitrary actuators, train a Gymnasium env on top, record + replay sessions.
 
 ## Demo: LuckyEngine + LeRobot Sim2Real
 
@@ -319,7 +319,7 @@ client.register_stub("my_service", my_pb2_grpc.MyServiceStub)
 client.my_service.DoThing(request, timeout=5.0)
 ```
 
-`client.pb` is a `SimpleNamespace` exposing every checked-in proto module — `client.pb.scene`, `client.pb.agent`, `client.pb.mujoco`, `client.pb.mujoco_scene`, `client.pb.camera`, `client.pb.debug`, `client.pb.telemetry`, `client.pb.viewport`, `client.pb.media`, `client.pb.common` — for hand-rolling requests.
+`client.pb` is a `SimpleNamespace` exposing every checked-in proto module — `client.pb.scene`, `client.pb.agent`, `client.pb.mujoco`, `client.pb.mujoco_scene`, `client.pb.camera`, `client.pb.debug`, `client.pb.telemetry`, `client.pb.viewport`, `client.pb.media`, `client.pb.lidar`, `client.pb.common` — for hand-rolling requests.
 
 ```python
 # Editor lifecycle — async transitions; poll readiness before stepping.
@@ -440,12 +440,12 @@ There is no direct cartesian IK RPC yet. The supported path is to author a motio
 
 ```python
 robot.set_motion_graph_active(True)
-robot.set_motion_graph_input("LeftTarget",  (0.30, 0.90,  0.20))
-robot.set_motion_graph_input("RightTarget", (0.30, 0.90, -0.20))
-robot.fire_motion_graph_trigger("ResetIKBlend")
+robot.set_motion_graph_input(1, (0.30, 0.90,  0.20))   # left target  — Vec3 Input node id 1
+robot.set_motion_graph_input(2, (0.30, 0.90, -0.20))   # right target — Vec3 Input node id 2
+robot.fire_motion_graph_trigger(3)                     # ResetIKBlend  — Trigger node id 3
 ```
 
-Inputs and triggers are addressed by name; the graph author and the client agree on those names. (See `policy-ik-test-walkthrough.md` for the full G1 walker + LimbIK setup, including the gotcha that the waist must be claimed by the walker policy, not left to the graph.)
+Inputs and triggers are addressed by the numeric `input_id` the graph assigns each node — **not** its display name; passing a name string raises `ValueError`. The graph author and the client have to agree on those ids. (Gotcha on humanoids: the waist joints must be claimed by the walker policy's driven-joint mask, not left to the graph, or the two fight over them.)
 
 ## Validation, reflection, feature detection
 
@@ -510,7 +510,7 @@ Two distinct things share the word "recording":
 
    `SessionRecording.events` is a list of `RecordedEvent(timestamp_s, rpc, request_json, response_json)`.
 
-2. **Episode/Parquet recording** (engine-side). The engine writes per-substep `qpos` / `ctrl` rows to Parquet under `data/chunk-XXX/file-YYY.parquet`. As of LuckyEngine `mick/policy-fixes` each row carries a `frame_flags : uint8` bit-packed column:
+2. **Episode/Parquet recording** (engine-side). The engine writes per-substep `qpos` / `ctrl` rows to Parquet under `data/chunk-XXX/file-YYY.parquet`. Each row carries a `frame_flags : uint8` bit-packed column (the column's `names` are listed in the recording's `info.json`, so an older recording without it is easy to spot):
 
    | Bit | Mask | Meaning |
    |---|---|---|
@@ -586,9 +586,9 @@ Add your own with `[MdpReward]` / `[MdpObservation]` / `[MdpTermination]` decora
 
 ## Known engine limitations
 
-- **No cartesian IK RPC.** Drive IK targets through motion-graph inputs by name (above). There is also no schema RPC listing what inputs / triggers a given motion graph exposes — graph author and client must agree on names.
-- **Single viewport.** `ViewportService.GetViewportInfo` always returns `["Main"]` on this engine branch — no multi-viewport spectator support.
-- **`SetSimulationMode("realtime")`** is rejected while a gRPC client is connected (the action-gate invariant). Use `"deterministic"` for visualization or `"fast"` for training.
+- **No cartesian IK RPC.** Drive IK targets through motion-graph inputs, addressed by their numeric `input_id` (above). There is also no schema RPC listing what inputs / triggers a given motion graph exposes — graph author and client must agree on those ids.
+- **Single viewport.** `ViewportService.GetViewportInfo` always returns `["Main"]` — no multi-viewport spectator support.
+- **`SetSimulationMode("realtime")` does not suit a `step()` loop.** Realtime paces the simulation to the wall clock and drops or repeats frames to keep up, so a gated stepping loop is no longer reproducible. Use `"deterministic"` for a watchable run or `"fast"` for training.
 - **`MujocoService.GetMujocoInfo` actuator names mirror joint names.** For full actuator metadata use `MujocoSceneService.GetModelInfo` (i.e. `MujocoScene.model_info()`).
 
 ## Available robots & scenes
@@ -604,7 +604,7 @@ Add your own with `[MdpReward]` / `[MdpObservation]` / `[MdpTermination]` decora
 ```bash
 pip install luckyrobots[sysid]
 
-luckyrobots sysid presets --robot unitreego2                # list available parameter presets
+luckyrobots sysid presets --robot go2                       # list available parameter presets
 luckyrobots sysid collect --robot unitreego2 --signal chirp --duration 15 -o traj.npz
 luckyrobots sysid identify traj.npz -m go2.xml --preset go2:motor -o result.json
 luckyrobots sysid apply result.json -m go2.xml -o go2_calibrated.xml

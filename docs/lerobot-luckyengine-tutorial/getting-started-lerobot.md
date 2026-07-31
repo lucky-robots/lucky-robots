@@ -76,7 +76,7 @@ want to iterate.
 complete example. The minimum is:
 
 ```csharp
-// Hazel-ScriptCore/Source/Hazel/Data/Observer.cs
+// In your scene's C# script — Observer is the engine's recording API.
 Observer.RegisterTask(0, "Pick up the lego block and place it on the target");
 Observer.StartRecording();
 
@@ -95,7 +95,7 @@ Observer.StopRecording();
 | Field | Contents |
 |-------|----------|
 | `action` | float32 list, one entry per actuator (`m->nu`). |
-| `observation.state` | float32 list — *all* actuated joint qpos. Often wider than your policy needs; trim in the cleanup pass (§2). |
+| `observation.state` | float32 list — *all* actuated joint qpos. Often wider than your policy needs; trim in the cleanup pass (§1.3). |
 | `observation.images.<cam>` | uint8 RGB written as h264 mp4 chunks (not embedded in parquet). |
 
 ```{tip}
@@ -169,6 +169,7 @@ so there's no async stream to race against.
 ```
 
 ```python
+import numpy as np
 from luckyrobots import Session
 
 with Session(host="127.0.0.1", port=50051) as session:
@@ -191,7 +192,10 @@ with Session(host="127.0.0.1", port=50051) as session:
 
         for step in range(MAX_STEPS):
             state  = obs_resp.observation[:state_dim]                   # list[float]
-            frames = {cf.name: cf.image for cf in obs_resp.camera_frames}
+            # CameraFrame carries raw bytes, not an array — decode to HxWxC uint8.
+            frames = {cf.name: np.frombuffer(cf.data, np.uint8)
+                                .reshape(cf.height, cf.width, cf.channels)
+                      for cf in obs_resp.camera_frames}
             action = predict(policy, pre, post, build_obs(state, frames))
             obs_resp = session.step(action.tolist())
             if success(obs_resp):
@@ -419,8 +423,9 @@ linearly interpolated, and earlier steps are open-circle lower-bound estimates.
 
 ## 7 · Going deeper
 
-- **Inference architecture canon** — gRPC, AgentBatch, agent schemas, the
-  lock-step protocol: `LuckyEngine/docs/lerobot-inference.md`.
+- **Inference architecture** — the gRPC services, the agent observation/action
+  schemas and the lock-step step loop: see the API reference in this SDK's docs
+  and the `AgentService` section of the main README.
 - **LeRobot library docs** — <https://huggingface.co/docs/lerobot>.
 - **Genesis** — <https://github.com/Genesis-Embodied-AI/Genesis>.
 - **ACT paper** — Zhao et al. 2023,
@@ -461,5 +466,5 @@ the LE editor; otherwise jump to the install table.
 | OS | Windows 10/11 for LE; Linux for the Python trainer. |
 | Python | 3.10–3.12. `pip install lerobot luckyrobots torch grpcio numpy` (LeRobot ≥ 3.0). For §4 (Genesis sim-to-sim) also `pip install genesis-world`. |
 | GPU | Any CUDA card for training. LE renders on the host GPU. |
-| LE build | Release x64 from `LuckyEngine.sln`. |
+| LE build | A LuckyEngine Release x64 build. |
 | gRPC port | SDK default `50051`; pass `port=` to `Session(...)` if your LE binds something else. |

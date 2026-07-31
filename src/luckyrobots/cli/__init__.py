@@ -1,8 +1,9 @@
 """Top-level CLI for luckyrobots.
 
 Entry point: ``luckyrobots`` (installed via pyproject.toml console_scripts).
-Subcommands are registered lazily so optional dependencies are only
-imported when the relevant subcommand is invoked.
+Each subcommand imports its heavy and optional dependencies inside the command
+body, so unrelated subcommands still run without the optional extras installed
+(e.g. ``pip install luckyrobots[sysid]``).
 """
 
 import click

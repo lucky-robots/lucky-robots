@@ -1,5 +1,87 @@
 # Changelog
 
+## 0.5.0 (2026-07-30) — NIR materials: what a surface is made of
+
+0.4.0 told you *where* things are. This release adds *what they are*. The engine's
+LiDAR and depth camera now share one near-infrared material model, so glass, water,
+mirrors and retroreflectors behave the way they do in front of a real 905 nm sensor —
+and this release exposes that to Python.
+
+### Added
+
+- **Return strength** — `client.get_lidar_scan(..., want_intensity=True)` fills two
+  new per-beam channels alongside `ranges`:
+  - `intensity` — what the receiver actually saw, so it carries 1/R² falloff and
+    saturates close in.
+  - `reflectivity_calibrated` — the same return with range divided back out, in
+    multiples of a perfect Lambertian at normal incidence. This is the one to compare
+    across distances when you're judging what a surface is made of.
+
+  Both need `material=True` to mean anything, and both use `-1.0` for "not
+  resolvable" — the bake had no material at that hit, so the geometry is still real
+  but the material is unknown.
+
+- **Multi-return** — `client.set_lidar_secondary_capture(capture, scope)` controls what
+  a beam does after its first hit: pass through it (glass → the wall behind), fold off
+  it (mirror), or both. `secondary_ranges` then carries the second hit per beam.
+
+- **Material bake control** —
+  - `client.bake_lidar_material(cell_size, max_dim, splat_radius, include_hidden)`
+    builds the voxel bake that maps a physics hit back to its rendered material. Every
+    argument falls back to the scene's own setting, so calling it bare just rebuilds.
+    `splat_radius` is worth setting: at 0 the bake fills only the cells a triangle
+    crosses while the lookup is nearest-cell, which measured 27.5% of rays missing the
+    bake against 1.3% at radius 1.
+  - `client.get_lidar_bake_status()` reports what's baked — format, extent, occupancy —
+    and, importantly, `stale`. A stale bake still answers, but it answers with the
+    materials as they were when it was baked.
+
+- **Camera configuration** — `client.get_camera_config(name)` and
+  `client.set_camera_config(name, config)` expose resolution, depth recording,
+  `depth_scale`, and the depth `sensor_model` (clean z-buffer, ActiveStereo, iToF,
+  StructuredLight, dToFSparse) with its calibration.
+
+  They also expose `debug_channel`, a diagnostic selector: set it non-zero and the
+  camera replaces each pixel's range with an internal term of the sensor model —
+  backscatter, incidence cosine, NIR reflectivity, metalness, roughness, transmission
+  suppression, continuation class, or stereo occlusion reject. That stream is **not** a
+  depth map, and a recording made with one set says so in its `info.json`. Set it back
+  to 0 when you're done.
+
+### Usage
+
+```python
+# Bake first — the material channels and multi-return both read the voxel bake, which is
+# what maps a physics hit back to the material that was rendered there.
+client.bake_lidar_material(cell_size=0.05, splat_radius=1, timeout=120.0)
+st = client.get_lidar_bake_status()
+assert st.valid and not st.stale          # a stale bake answers with the OLD materials
+
+# Per-beam material strength. reflectivity_calibrated is the range-compensated one.
+scan = client.get_lidar_scan(material=True, want_intensity=True)
+
+# Multi-return needs BOTH gates: the capture mode AND a sensor modelled with >= 2 echoes.
+# Single-echo hardware (Unitree L1, Livox Mid-360) cannot report a ghost, so the live path
+# withholds it no matter what capture is set to.
+client.set_lidar_secondary_capture(capture=3, scope=1)     # 3 = both, 1 = all surfaces
+p = client.lidar.GetLidarReturnParams(client.pb.lidar.GetLidarReturnParamsRequest())
+client.lidar.SetLidarReturnParams(client.pb.lidar.SetLidarReturnParamsRequest(
+    max_range_at_ref=p.max_range_at_ref, ref_reflectivity=p.ref_reflectivity,
+    range_exp=p.range_exp, noise_sigma0=p.noise_sigma0,
+    grazing_cos_cutoff=p.grazing_cos_cutoff, intensity_ref_range=p.intensity_ref_range,
+    detect_floor=p.detect_floor, near_range_r0=p.near_range_r0,
+    noise_slope_per_m=p.noise_slope_per_m, max_returns=2))
+scan = client.get_lidar_scan(material=True, want_secondary=True)
+
+# Camera: read the config, change one field, put it back.
+cfg = client.get_camera_config("front_camera").config
+new = client.pb.camera.CameraConfig(); new.CopyFrom(cfg)
+new.debug_channel = 8                     # continuation class; 0 = real depth
+client.set_camera_config("front_camera", new)
+```
+
+A diagnostic channel is NOT depth — set it back to 0 when you are done reading it.
+
 ## 0.4.0 (2026-07-21) — LiDAR support + camera depth (RGBD)
 
 The headline of this release is **first-class LiDAR support**. You can now turn a
@@ -45,8 +127,8 @@ calls (`list_cameras`, `get_full_state`, …), not from inside an active `step()
 
 ## 0.3.0 (2026-05-05) — Runtime gain override, scene reset, editor play/stop
 
-Tracks the LuckyEngine `mick/policy-fixes` branch — runtime PD/scale tuning,
-soft scene reset, gRPC-driven editor play/stop, and recording-aware metadata.
+Runtime PD/scale tuning, soft scene reset, gRPC-driven editor play/stop, and
+recording-aware metadata.
 
 ### Added
 - `RobotController.set_policy_gains(slot, overrides)` /
@@ -109,7 +191,6 @@ upgraded MujocoSceneService.
 
 ### Notes
 - Generated stubs use absolute imports (matching upstream convention).
-- Vendored against engine `mick/policy-redo` branch which integrates and
-  extends `mick/grpc-api` (the original v0.2.0 base): preserves all
-  existing task-contract / action-group / progress RPCs and
-  `LuckyEnv` / `reflection.py` modules.
+- Additive against the v0.2.0 engine API: every existing task-contract /
+  action-group / progress RPC is preserved, as are the `LuckyEnv` and
+  `reflection.py` modules.

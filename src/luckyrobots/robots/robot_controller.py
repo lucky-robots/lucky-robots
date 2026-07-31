@@ -19,9 +19,13 @@ Quick start:
         walker_ids  = {d.policy_id: d for d in list_policy_descriptors(sess)}
 
         robot = RobotController.from_state(sess, controllers[0])
-        robot.set_policy_active(slot_id=1, active=True)   # activate Walker slot
-        robot.set_command_float(slot_id=1, command_id=1, value=0.5)  # SetVx
-        robot.set_driven_joints(slot_id=2, joints=["left_arm_*", "right_arm_*"])
+        robot.set_policy_active(slot=1, active=True)      # activate Walker slot
+        robot.set_command_float(slot=1, command_id=1, value=0.5)   # SetVx, by id
+        robot.commands(1)["SetVx"] = 0.5                  # the same write, by name
+
+        # Driven-joint names are matched by exact equality — no globs or prefixes.
+        robot.set_driven_joints(slot=2, joints=["left_shoulder_pitch_joint",
+                                                "left_elbow_joint"])
         robot.set_motion_graph_active(False)
 """
 
@@ -438,8 +442,7 @@ class RobotController:
         Raises LookupError when the slot is inactive or hasn't inferred yet.
 
         ``action_values`` is a 1-D ``numpy.ndarray`` (float32) so callers can
-        do vectorized math on the result; iteration still works the same
-        as it did when this returned a list."""
+        do vectorized math on the result; it is also iterable element by element."""
         req = _agent_pb2.GetPolicyLastActionRequest(
             entity=self._entity(), slot_id=self._resolve_slot(slot)
         )
@@ -595,7 +598,7 @@ def list_robot_controllers(session) -> List[RobotControllerState]:
 
 def list_policy_descriptors(session) -> List[PolicyDescriptorInfo]:
     """Enumerate entries in the project's PolicyRegistry.yaml + their
-    descriptor fields (joints, command ids, obs spec)."""
+    descriptor fields (joints, command ids, freeze joints, command aliases)."""
     client = session.engine_client
     if client is None:
         raise RuntimeError("Session is not connected.")

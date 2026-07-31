@@ -1,7 +1,7 @@
 """Gymnasium-compatible environment wrapper for LuckyEngine.
 
-This is the primary interface for RL training — it replaces the 4,000+ line
-LuckyLab manager framework with a thin, standard Gymnasium env.
+The primary interface for RL training: a thin, standard Gymnasium env over the
+engine's gRPC agent API.
 
 Usage:
     import numpy as np
@@ -101,7 +101,10 @@ class LuckyEnv:
             timeout: Connection timeout in seconds.
             randomization_cfg: Domain randomization config dict for SimulationContract.
             max_episode_length_s: Maximum episode length in seconds.
-            auto_start: If True, launch the engine process automatically.
+            auto_start: Accepted but currently unused — this class never launches
+                a process. Start the engine yourself (``luckyrobots.engine``'s
+                ``launch_luckyengine``, or the editor) before constructing the env,
+                or the first connection attempt will simply time out.
             agent_name: Agent name (empty = default agent).
         """
         from .client import LuckyEngineClient

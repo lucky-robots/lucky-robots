@@ -1,7 +1,6 @@
 """Debug visualization helpers for LuckyEngine.
 
 Standalone functions that draw debug primitives via a LuckyEngineClient.
-Extracted from client.py for single-responsibility clarity.
 """
 
 from __future__ import annotations

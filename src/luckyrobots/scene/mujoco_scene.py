@@ -430,9 +430,11 @@ class MujocoScene:
     ) -> _ms_pb2.SetControlResponse:
         """Drive arbitrary actuators by bulk vector, index, or actuator name.
 
-        The engine refuses to clobber actuators currently owned by an active
-        external RL agent and reports them in ``rejected_actuators`` of the
-        response (also surfacing via ``success=False``).
+        The engine refuses to clobber actuators currently owned by an active RL
+        agent or PolicySlot. That refusal is per-actuator and does NOT fail the
+        call: the response still carries ``success=True`` and names the skipped
+        actuators in ``rejected_actuators``. Inspect that list — a partially
+        applied write raises nothing.
         """
         req = _ms_pb2.SetControlRequest(
             skip_range_clamp=bool(skip_range_clamp),
@@ -457,7 +459,9 @@ class MujocoScene:
 
     def actuator_gains(self) -> list:
         """Snapshot of every actuator's ``gainprm[0]`` / ``biasprm[0]`` plus the
-        ``neutralized`` flag set by ``NeutralizeActuatorsForTorquePolicy``."""
+        ``neutralized`` convenience flag — true when ``gain_prm_0`` is ~0, which is
+        what the engine leaves behind while an active torque policy owns that
+        actuator. The authored XML gain is not recoverable from this call."""
         resp = self._stub().GetActuatorGains(_ms_pb2.GetActuatorGainsRequest())
         self._check_ok(resp)
         return [ActuatorGainInfo._from_pb(g) for g in resp.actuators]

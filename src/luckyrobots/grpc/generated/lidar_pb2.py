@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0blidar.proto\x12\thazel.rpc\"\'\n\x08LidarAck\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"$\n\x12LidarSensorRequest\x12\x0e\n\x06sensor\x18\x01 \x01(\r\"#\n\x13SetLidarLiveRequest\x12\x0c\n\x04live\x18\x01 \x01(\x08\"\xfa\x01\n\x15SetLidarConfigRequest\x12\x0e\n\x06sensor\x18\x01 \x01(\r\x12\x14\n\x0cscan_pattern\x18\x02 \x01(\r\x12\x10\n\x08\x63hannels\x18\x03 \x01(\r\x12\x14\n\x0c\x61zimuth_bins\x18\x04 \x01(\r\x12\x14\n\x0cvfov_min_deg\x18\x05 \x01(\x02\x12\x14\n\x0cvfov_max_deg\x18\x06 \x01(\x02\x12\x11\n\tmin_range\x18\x07 \x01(\x02\x12\x11\n\tmax_range\x18\x08 \x01(\x02\x12\x13\n\x0brotation_hz\x18\t \x01(\x02\x12\x17\n\x0fgeom_group_mask\x18\n \x01(\r\x12\x13\n\x0bself_ignore\x18\x0b \x01(\r\"\xf7\x01\n\x13LidarConfigResponse\x12\r\n\x05\x66ound\x18\x01 \x01(\x08\x12\x14\n\x0cscan_pattern\x18\x02 \x01(\r\x12\x10\n\x08\x63hannels\x18\x03 \x01(\r\x12\x14\n\x0c\x61zimuth_bins\x18\x04 \x01(\r\x12\x14\n\x0cvfov_min_deg\x18\x05 \x01(\x02\x12\x14\n\x0cvfov_max_deg\x18\x06 \x01(\x02\x12\x11\n\tmin_range\x18\x07 \x01(\x02\x12\x11\n\tmax_range\x18\x08 \x01(\x02\x12\x13\n\x0brotation_hz\x18\t \x01(\x02\x12\x17\n\x0fgeom_group_mask\x18\n \x01(\r\x12\x13\n\x0bself_ignore\x18\x0b \x01(\r\"\xfb\x01\n\x1bSetLidarReturnParamsRequest\x12\x18\n\x10max_range_at_ref\x18\x01 \x01(\x02\x12\x18\n\x10ref_reflectivity\x18\x02 \x01(\x02\x12\x11\n\trange_exp\x18\x03 \x01(\x02\x12\x14\n\x0cnoise_sigma0\x18\x04 \x01(\x02\x12\x1a\n\x12grazing_cos_cutoff\x18\x05 \x01(\x02\x12\x1b\n\x13intensity_ref_range\x18\x06 \x01(\x02\x12\x14\n\x0c\x64\x65tect_floor\x18\x07 \x01(\x02\x12\x15\n\rnear_range_r0\x18\x08 \x01(\x02\x12\x19\n\x11noise_slope_per_m\x18\t \x01(\x02\"\'\n\x15SetLidarPresetRequest\x12\x0e\n\x06preset\x18\x01 \x01(\r\"-\n\x18\x42\x61keLidarMaterialRequest\x12\x11\n\tcell_size\x18\x01 \x01(\x02\"$\n\x14LoadLidarBakeRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"$\n\x14SaveLidarBakeRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"O\n\x13GetLidarScanRequest\x12\x0e\n\x06sensor\x18\x01 \x01(\r\x12\x10\n\x08material\x18\x02 \x01(\x08\x12\x16\n\x0ewant_secondary\x18\x03 \x01(\x08\"T\n\x11LidarScanResponse\x12\r\n\x05\x62\x65\x61ms\x18\x01 \x01(\r\x12\x12\n\x06ranges\x18\x02 \x03(\x02\x42\x02\x10\x01\x12\x1c\n\x10secondary_ranges\x18\x03 \x03(\x02\x42\x02\x10\x01\"\'\n\x16LidarBeamCountResponse\x12\r\n\x05\x62\x65\x61ms\x18\x01 \x01(\r\"T\n\x17LidarBeamAnglesResponse\x12\r\n\x05\x62\x65\x61ms\x18\x01 \x01(\r\x12\x13\n\x07\x61zimuth\x18\x02 \x03(\x02\x42\x02\x10\x01\x12\x15\n\televation\x18\x03 \x03(\x02\x42\x02\x10\x01\x32\xe6\x06\n\x0cLidarService\x12\x43\n\x0cSetLidarLive\x12\x1e.hazel.rpc.SetLidarLiveRequest\x1a\x13.hazel.rpc.LidarAck\x12G\n\x0eSetLidarConfig\x12 .hazel.rpc.SetLidarConfigRequest\x1a\x13.hazel.rpc.LidarAck\x12O\n\x0eGetLidarConfig\x12\x1d.hazel.rpc.LidarSensorRequest\x1a\x1e.hazel.rpc.LidarConfigResponse\x12S\n\x14SetLidarReturnParams\x12&.hazel.rpc.SetLidarReturnParamsRequest\x1a\x13.hazel.rpc.LidarAck\x12G\n\x0eSetLidarPreset\x12 .hazel.rpc.SetLidarPresetRequest\x1a\x13.hazel.rpc.LidarAck\x12M\n\x11\x42\x61keLidarMaterial\x12#.hazel.rpc.BakeLidarMaterialRequest\x1a\x13.hazel.rpc.LidarAck\x12\x45\n\rLoadLidarBake\x12\x1f.hazel.rpc.LoadLidarBakeRequest\x1a\x13.hazel.rpc.LidarAck\x12\x45\n\rSaveLidarBake\x12\x1f.hazel.rpc.SaveLidarBakeRequest\x1a\x13.hazel.rpc.LidarAck\x12L\n\x0cGetLidarScan\x12\x1e.hazel.rpc.GetLidarScanRequest\x1a\x1c.hazel.rpc.LidarScanResponse\x12U\n\x11GetLidarBeamCount\x12\x1d.hazel.rpc.LidarSensorRequest\x1a!.hazel.rpc.LidarBeamCountResponse\x12W\n\x12GetLidarBeamAngles\x12\x1d.hazel.rpc.LidarSensorRequest\x1a\".hazel.rpc.LidarBeamAnglesResponseB\x03\xf8\x01\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0blidar.proto\x12\thazel.rpc\"\'\n\x08LidarAck\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"$\n\x12LidarSensorRequest\x12\x0e\n\x06sensor\x18\x01 \x01(\r\"#\n\x13SetLidarLiveRequest\x12\x0c\n\x04live\x18\x01 \x01(\x08\"\xfa\x01\n\x15SetLidarConfigRequest\x12\x0e\n\x06sensor\x18\x01 \x01(\r\x12\x14\n\x0cscan_pattern\x18\x02 \x01(\r\x12\x10\n\x08\x63hannels\x18\x03 \x01(\r\x12\x14\n\x0c\x61zimuth_bins\x18\x04 \x01(\r\x12\x14\n\x0cvfov_min_deg\x18\x05 \x01(\x02\x12\x14\n\x0cvfov_max_deg\x18\x06 \x01(\x02\x12\x11\n\tmin_range\x18\x07 \x01(\x02\x12\x11\n\tmax_range\x18\x08 \x01(\x02\x12\x13\n\x0brotation_hz\x18\t \x01(\x02\x12\x17\n\x0fgeom_group_mask\x18\n \x01(\r\x12\x13\n\x0bself_ignore\x18\x0b \x01(\r\"\xab\x02\n\x13LidarConfigResponse\x12\r\n\x05\x66ound\x18\x01 \x01(\x08\x12\x14\n\x0cscan_pattern\x18\x02 \x01(\r\x12\x10\n\x08\x63hannels\x18\x03 \x01(\r\x12\x14\n\x0c\x61zimuth_bins\x18\x04 \x01(\r\x12\x14\n\x0cvfov_min_deg\x18\x05 \x01(\x02\x12\x14\n\x0cvfov_max_deg\x18\x06 \x01(\x02\x12\x11\n\tmin_range\x18\x07 \x01(\x02\x12\x11\n\tmax_range\x18\x08 \x01(\x02\x12\x13\n\x0brotation_hz\x18\t \x01(\x02\x12\x17\n\x0fgeom_group_mask\x18\n \x01(\r\x12\x13\n\x0bself_ignore\x18\x0b \x01(\r\x12\x19\n\x11secondary_capture\x18\x0c \x01(\r\x12\x17\n\x0fsecondary_scope\x18\r \x01(\r\"\xf5\x04\n\x1bSetLidarReturnParamsRequest\x12\x18\n\x10max_range_at_ref\x18\x01 \x01(\x02\x12\x18\n\x10ref_reflectivity\x18\x02 \x01(\x02\x12\x11\n\trange_exp\x18\x03 \x01(\x02\x12\x14\n\x0cnoise_sigma0\x18\x04 \x01(\x02\x12\x1a\n\x12grazing_cos_cutoff\x18\x05 \x01(\x02\x12\x1b\n\x13intensity_ref_range\x18\x06 \x01(\x02\x12\x14\n\x0c\x64\x65tect_floor\x18\x07 \x01(\x02\x12\x15\n\rnear_range_r0\x18\x08 \x01(\x02\x12\x19\n\x11noise_slope_per_m\x18\t \x01(\x02\x12\x1d\n\x10spec_slope_floor\x18\n \x01(\x02H\x00\x88\x01\x01\x12\x1a\n\rspec_peak_max\x18\x0b \x01(\x02H\x01\x88\x01\x01\x12\x17\n\nretro_gain\x18\x0c \x01(\x02H\x02\x88\x01\x01\x12\x1a\n\rretro_cos_exp\x18\r \x01(\x02H\x03\x88\x01\x01\x12\x1b\n\x0e\x66old_max_slope\x18\x0e \x01(\x02H\x04\x88\x01\x01\x12\x18\n\x0brange_floor\x18\x0f \x01(\x02H\x05\x88\x01\x01\x12\"\n\x15min_return_separation\x18\x10 \x01(\x02H\x06\x88\x01\x01\x12\x18\n\x0bmax_returns\x18\x11 \x01(\rH\x07\x88\x01\x01\x42\x13\n\x11_spec_slope_floorB\x10\n\x0e_spec_peak_maxB\r\n\x0b_retro_gainB\x10\n\x0e_retro_cos_expB\x11\n\x0f_fold_max_slopeB\x0e\n\x0c_range_floorB\x18\n\x16_min_return_separationB\x0e\n\x0c_max_returns\"\x1d\n\x1bGetLidarReturnParamsRequest\"\xb6\x03\n\x19LidarReturnParamsResponse\x12\x18\n\x10max_range_at_ref\x18\x01 \x01(\x02\x12\x18\n\x10ref_reflectivity\x18\x02 \x01(\x02\x12\x11\n\trange_exp\x18\x03 \x01(\x02\x12\x14\n\x0cnoise_sigma0\x18\x04 \x01(\x02\x12\x1a\n\x12grazing_cos_cutoff\x18\x05 \x01(\x02\x12\x1b\n\x13intensity_ref_range\x18\x06 \x01(\x02\x12\x14\n\x0c\x64\x65tect_floor\x18\x07 \x01(\x02\x12\x15\n\rnear_range_r0\x18\x08 \x01(\x02\x12\x19\n\x11noise_slope_per_m\x18\t \x01(\x02\x12\x18\n\x10spec_slope_floor\x18\n \x01(\x02\x12\x15\n\rspec_peak_max\x18\x0b \x01(\x02\x12\x12\n\nretro_gain\x18\x0c \x01(\x02\x12\x15\n\rretro_cos_exp\x18\r \x01(\x02\x12\x16\n\x0e\x66old_max_slope\x18\x0e \x01(\x02\x12\x13\n\x0brange_floor\x18\x0f \x01(\x02\x12\x1d\n\x15min_return_separation\x18\x10 \x01(\x02\x12\x13\n\x0bmax_returns\x18\x11 \x01(\r\"\'\n\x15SetLidarPresetRequest\x12\x0e\n\x06preset\x18\x01 \x01(\r\"l\n\x18\x42\x61keLidarMaterialRequest\x12\x11\n\tcell_size\x18\x01 \x01(\x02\x12\x0f\n\x07max_dim\x18\x02 \x01(\x05\x12\x14\n\x0csplat_radius\x18\x03 \x01(\x05\x12\x16\n\x0einclude_hidden\x18\x04 \x01(\r\"\xf3\x01\n\x17LidarBakeStatusResponse\x12\r\n\x05valid\x18\x01 \x01(\x08\x12\x16\n\x0e\x66ormat_version\x18\x02 \x01(\r\x12\x13\n\x0b\x63\x65ll_size_m\x18\x03 \x01(\x02\x12\x14\n\x0csplat_radius\x18\x04 \x01(\x05\x12\r\n\x05\x64im_x\x18\x05 \x01(\r\x12\r\n\x05\x64im_y\x18\x06 \x01(\r\x12\r\n\x05\x64im_z\x18\x07 \x01(\r\x12\x14\n\x0c\x66illed_cells\x18\x08 \x01(\x04\x12\x16\n\x0egeom_materials\x18\t \x01(\x04\x12\x1c\n\x14material_fingerprint\x18\n \x01(\x04\x12\r\n\x05stale\x18\x0b \x01(\x08\"Q\n\x1fSetLidarSecondaryCaptureRequest\x12\x0e\n\x06sensor\x18\x01 \x01(\r\x12\x0f\n\x07\x63\x61pture\x18\x02 \x01(\r\x12\r\n\x05scope\x18\x03 \x01(\r\"$\n\x14LoadLidarBakeRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"$\n\x14SaveLidarBakeRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"g\n\x13GetLidarScanRequest\x12\x0e\n\x06sensor\x18\x01 \x01(\r\x12\x10\n\x08material\x18\x02 \x01(\x08\x12\x16\n\x0ewant_secondary\x18\x03 \x01(\x08\x12\x16\n\x0ewant_intensity\x18\x04 \x01(\x08\"\x90\x01\n\x11LidarScanResponse\x12\r\n\x05\x62\x65\x61ms\x18\x01 \x01(\r\x12\x12\n\x06ranges\x18\x02 \x03(\x02\x42\x02\x10\x01\x12\x1c\n\x10secondary_ranges\x18\x03 \x03(\x02\x42\x02\x10\x01\x12\x15\n\tintensity\x18\x04 \x03(\x02\x42\x02\x10\x01\x12#\n\x17reflectivity_calibrated\x18\x05 \x03(\x02\x42\x02\x10\x01\"\'\n\x16LidarBeamCountResponse\x12\r\n\x05\x62\x65\x61ms\x18\x01 \x01(\r\"T\n\x17LidarBeamAnglesResponse\x12\r\n\x05\x62\x65\x61ms\x18\x01 \x01(\r\x12\x13\n\x07\x61zimuth\x18\x02 \x03(\x02\x42\x02\x10\x01\x12\x15\n\televation\x18\x03 \x03(\x02\x42\x02\x10\x01\x32\x82\t\n\x0cLidarService\x12\x43\n\x0cSetLidarLive\x12\x1e.hazel.rpc.SetLidarLiveRequest\x1a\x13.hazel.rpc.LidarAck\x12G\n\x0eSetLidarConfig\x12 .hazel.rpc.SetLidarConfigRequest\x1a\x13.hazel.rpc.LidarAck\x12O\n\x0eGetLidarConfig\x12\x1d.hazel.rpc.LidarSensorRequest\x1a\x1e.hazel.rpc.LidarConfigResponse\x12S\n\x14SetLidarReturnParams\x12&.hazel.rpc.SetLidarReturnParamsRequest\x1a\x13.hazel.rpc.LidarAck\x12\x64\n\x14GetLidarReturnParams\x12&.hazel.rpc.GetLidarReturnParamsRequest\x1a$.hazel.rpc.LidarReturnParamsResponse\x12G\n\x0eSetLidarPreset\x12 .hazel.rpc.SetLidarPresetRequest\x1a\x13.hazel.rpc.LidarAck\x12[\n\x18SetLidarSecondaryCapture\x12*.hazel.rpc.SetLidarSecondaryCaptureRequest\x1a\x13.hazel.rpc.LidarAck\x12M\n\x11\x42\x61keLidarMaterial\x12#.hazel.rpc.BakeLidarMaterialRequest\x1a\x13.hazel.rpc.LidarAck\x12W\n\x12GetLidarBakeStatus\x12\x1d.hazel.rpc.LidarSensorRequest\x1a\".hazel.rpc.LidarBakeStatusResponse\x12\x45\n\rLoadLidarBake\x12\x1f.hazel.rpc.LoadLidarBakeRequest\x1a\x13.hazel.rpc.LidarAck\x12\x45\n\rSaveLidarBake\x12\x1f.hazel.rpc.SaveLidarBakeRequest\x1a\x13.hazel.rpc.LidarAck\x12L\n\x0cGetLidarScan\x12\x1e.hazel.rpc.GetLidarScanRequest\x1a\x1c.hazel.rpc.LidarScanResponse\x12U\n\x11GetLidarBeamCount\x12\x1d.hazel.rpc.LidarSensorRequest\x1a!.hazel.rpc.LidarBeamCountResponse\x12W\n\x12GetLidarBeamAngles\x12\x1d.hazel.rpc.LidarSensorRequest\x1a\".hazel.rpc.LidarBeamAnglesResponseB\x03\xf8\x01\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,6 +36,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_LIDARSCANRESPONSE'].fields_by_name['ranges']._serialized_options = b'\020\001'
   _globals['_LIDARSCANRESPONSE'].fields_by_name['secondary_ranges']._loaded_options = None
   _globals['_LIDARSCANRESPONSE'].fields_by_name['secondary_ranges']._serialized_options = b'\020\001'
+  _globals['_LIDARSCANRESPONSE'].fields_by_name['intensity']._loaded_options = None
+  _globals['_LIDARSCANRESPONSE'].fields_by_name['intensity']._serialized_options = b'\020\001'
+  _globals['_LIDARSCANRESPONSE'].fields_by_name['reflectivity_calibrated']._loaded_options = None
+  _globals['_LIDARSCANRESPONSE'].fields_by_name['reflectivity_calibrated']._serialized_options = b'\020\001'
   _globals['_LIDARBEAMANGLESRESPONSE'].fields_by_name['azimuth']._loaded_options = None
   _globals['_LIDARBEAMANGLESRESPONSE'].fields_by_name['azimuth']._serialized_options = b'\020\001'
   _globals['_LIDARBEAMANGLESRESPONSE'].fields_by_name['elevation']._loaded_options = None
@@ -49,25 +53,33 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SETLIDARCONFIGREQUEST']._serialized_start=143
   _globals['_SETLIDARCONFIGREQUEST']._serialized_end=393
   _globals['_LIDARCONFIGRESPONSE']._serialized_start=396
-  _globals['_LIDARCONFIGRESPONSE']._serialized_end=643
-  _globals['_SETLIDARRETURNPARAMSREQUEST']._serialized_start=646
-  _globals['_SETLIDARRETURNPARAMSREQUEST']._serialized_end=897
-  _globals['_SETLIDARPRESETREQUEST']._serialized_start=899
-  _globals['_SETLIDARPRESETREQUEST']._serialized_end=938
-  _globals['_BAKELIDARMATERIALREQUEST']._serialized_start=940
-  _globals['_BAKELIDARMATERIALREQUEST']._serialized_end=985
-  _globals['_LOADLIDARBAKEREQUEST']._serialized_start=987
-  _globals['_LOADLIDARBAKEREQUEST']._serialized_end=1023
-  _globals['_SAVELIDARBAKEREQUEST']._serialized_start=1025
-  _globals['_SAVELIDARBAKEREQUEST']._serialized_end=1061
-  _globals['_GETLIDARSCANREQUEST']._serialized_start=1063
-  _globals['_GETLIDARSCANREQUEST']._serialized_end=1142
-  _globals['_LIDARSCANRESPONSE']._serialized_start=1144
-  _globals['_LIDARSCANRESPONSE']._serialized_end=1228
-  _globals['_LIDARBEAMCOUNTRESPONSE']._serialized_start=1230
-  _globals['_LIDARBEAMCOUNTRESPONSE']._serialized_end=1269
-  _globals['_LIDARBEAMANGLESRESPONSE']._serialized_start=1271
-  _globals['_LIDARBEAMANGLESRESPONSE']._serialized_end=1355
-  _globals['_LIDARSERVICE']._serialized_start=1358
-  _globals['_LIDARSERVICE']._serialized_end=2228
+  _globals['_LIDARCONFIGRESPONSE']._serialized_end=695
+  _globals['_SETLIDARRETURNPARAMSREQUEST']._serialized_start=698
+  _globals['_SETLIDARRETURNPARAMSREQUEST']._serialized_end=1327
+  _globals['_GETLIDARRETURNPARAMSREQUEST']._serialized_start=1329
+  _globals['_GETLIDARRETURNPARAMSREQUEST']._serialized_end=1358
+  _globals['_LIDARRETURNPARAMSRESPONSE']._serialized_start=1361
+  _globals['_LIDARRETURNPARAMSRESPONSE']._serialized_end=1799
+  _globals['_SETLIDARPRESETREQUEST']._serialized_start=1801
+  _globals['_SETLIDARPRESETREQUEST']._serialized_end=1840
+  _globals['_BAKELIDARMATERIALREQUEST']._serialized_start=1842
+  _globals['_BAKELIDARMATERIALREQUEST']._serialized_end=1950
+  _globals['_LIDARBAKESTATUSRESPONSE']._serialized_start=1953
+  _globals['_LIDARBAKESTATUSRESPONSE']._serialized_end=2196
+  _globals['_SETLIDARSECONDARYCAPTUREREQUEST']._serialized_start=2198
+  _globals['_SETLIDARSECONDARYCAPTUREREQUEST']._serialized_end=2279
+  _globals['_LOADLIDARBAKEREQUEST']._serialized_start=2281
+  _globals['_LOADLIDARBAKEREQUEST']._serialized_end=2317
+  _globals['_SAVELIDARBAKEREQUEST']._serialized_start=2319
+  _globals['_SAVELIDARBAKEREQUEST']._serialized_end=2355
+  _globals['_GETLIDARSCANREQUEST']._serialized_start=2357
+  _globals['_GETLIDARSCANREQUEST']._serialized_end=2460
+  _globals['_LIDARSCANRESPONSE']._serialized_start=2463
+  _globals['_LIDARSCANRESPONSE']._serialized_end=2607
+  _globals['_LIDARBEAMCOUNTRESPONSE']._serialized_start=2609
+  _globals['_LIDARBEAMCOUNTRESPONSE']._serialized_end=2648
+  _globals['_LIDARBEAMANGLESRESPONSE']._serialized_start=2650
+  _globals['_LIDARBEAMANGLESRESPONSE']._serialized_end=2734
+  _globals['_LIDARSERVICE']._serialized_start=2737
+  _globals['_LIDARSERVICE']._serialized_end=3891
 # @@protoc_insertion_point(module_scope)

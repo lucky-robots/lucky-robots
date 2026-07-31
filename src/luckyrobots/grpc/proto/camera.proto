@@ -34,8 +34,58 @@ message StreamCameraRequest {
     string format = 6;           // "raw", "jpeg" (default: raw)
 }
 
+message CameraConfig {
+    uint32 width = 1;
+    uint32 height = 2;
+    bool record_mask = 3;
+    bool record_depth = 4;
+    bool enabled = 5;
+    // DepthSensorModel: 0=None (clean z-buffer), 1=ActiveStereo, 2=iToF, 3=StructuredLight, 4=dToFSparse.
+    uint32 sensor_model = 6;
+    float depth_scale = 7;        // meters per uint16 depth code
+    // Depth-sensor model calibration (used when sensor_model != None).
+    float max_range = 8;
+    float min_range = 9;
+    float detect_floor = 10;
+    float baseline = 11;
+    float subpixel_sigma = 12;
+    // Depth DIAGNOSTIC channel. 0 = off (record depth). Anything else replaces the
+    // recorded range with an internal term of the sensor model — for debugging only; such a stream is NOT a
+    // depth map, and the recording's info.json says so. 1=backscatter B, 2=incidence cos, 3=NIR reflectivity,
+    // 4=transparent surface depth, 5=metalness, 6=roughness, 7=transmission suppression, 8=continuation class,
+    // 9=stereo occlusion reject.
+    uint32 debug_channel = 13;
+}
+
+message GetCameraConfigRequest {
+    oneof identifier {
+        EntityId id = 1;
+        string name = 2;
+    }
+}
+
+message CameraConfigResponse {
+    bool found = 1;
+    CameraConfig config = 2;
+}
+
+message SetCameraConfigRequest {
+    oneof identifier {
+        EntityId id = 1;
+        string name = 2;
+    }
+    CameraConfig config = 3;
+}
+
+message CameraConfigAck {
+    bool ok = 1;
+    string message = 2;
+}
+
 // Streams pixels from a camera entity (useful for external perception / debugging).
 service CameraService {
     rpc ListCameras(ListCamerasRequest) returns (ListCamerasResponse);
     rpc StreamCamera(StreamCameraRequest) returns (stream ImageFrame);
+    rpc GetCameraConfig(GetCameraConfigRequest) returns (CameraConfigResponse);
+    rpc SetCameraConfig(SetCameraConfigRequest) returns (CameraConfigAck);
 }

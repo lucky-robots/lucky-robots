@@ -1,8 +1,8 @@
 """Asyncio mirror of luckyrobots.Session, built on grpc.aio.
 
 Use this when your application is asyncio-native and you want concurrent
-calls without spawning threads. The API mirrors Session 1:1, just with
-coroutines.
+calls without spawning threads. It exposes the raw service stubs plus a few
+Session conveniences as coroutines — not the whole Session surface.
 
 Lifecycle:
     sess = AsyncSession(host="127.0.0.1", port=50051)

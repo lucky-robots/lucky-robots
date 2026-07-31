@@ -5,7 +5,7 @@ Calls ``MujocoScene(sess).model_info()`` and dumps a per-joint table
 showing which PolicySlot or RL agent (if any) currently claims each
 joint and actuator. Then opens a 5-second filtered ``stream_state``
 that only includes policy-claimed joints, so the operator can verify
-the StateFilter wiring on the upgraded MujocoSceneService.
+the ``StateFilter`` is narrowing the stream to the joints you expect.
 
 Run:
     uv run python examples/scene_introspection.py

@@ -2,9 +2,9 @@
 
 The LuckyEngine server advertises its services via
 ``grpc.reflection.v1alpha.ServerReflection`` when started with
-``EnableReflection = true`` (the default). These helpers let callers discover
+server reflection enabled (the default). These helpers let callers discover
 what the connected server actually exposes at runtime — useful when a newer
-engine build ships services that predate the installed ``luckyrobots``
+engine build ships services that postdate the installed ``luckyrobots``
 release, or when poking at the server from an interactive session.
 
 Example:

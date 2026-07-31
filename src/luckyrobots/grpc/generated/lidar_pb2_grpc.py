@@ -55,15 +55,30 @@ class LidarServiceStub:
                 request_serializer=lidar__pb2.SetLidarReturnParamsRequest.SerializeToString,
                 response_deserializer=lidar__pb2.LidarAck.FromString,
                 _registered_method=True)
+        self.GetLidarReturnParams = channel.unary_unary(
+                '/hazel.rpc.LidarService/GetLidarReturnParams',
+                request_serializer=lidar__pb2.GetLidarReturnParamsRequest.SerializeToString,
+                response_deserializer=lidar__pb2.LidarReturnParamsResponse.FromString,
+                _registered_method=True)
         self.SetLidarPreset = channel.unary_unary(
                 '/hazel.rpc.LidarService/SetLidarPreset',
                 request_serializer=lidar__pb2.SetLidarPresetRequest.SerializeToString,
+                response_deserializer=lidar__pb2.LidarAck.FromString,
+                _registered_method=True)
+        self.SetLidarSecondaryCapture = channel.unary_unary(
+                '/hazel.rpc.LidarService/SetLidarSecondaryCapture',
+                request_serializer=lidar__pb2.SetLidarSecondaryCaptureRequest.SerializeToString,
                 response_deserializer=lidar__pb2.LidarAck.FromString,
                 _registered_method=True)
         self.BakeLidarMaterial = channel.unary_unary(
                 '/hazel.rpc.LidarService/BakeLidarMaterial',
                 request_serializer=lidar__pb2.BakeLidarMaterialRequest.SerializeToString,
                 response_deserializer=lidar__pb2.LidarAck.FromString,
+                _registered_method=True)
+        self.GetLidarBakeStatus = channel.unary_unary(
+                '/hazel.rpc.LidarService/GetLidarBakeStatus',
+                request_serializer=lidar__pb2.LidarSensorRequest.SerializeToString,
+                response_deserializer=lidar__pb2.LidarBakeStatusResponse.FromString,
                 _registered_method=True)
         self.LoadLidarBake = channel.unary_unary(
                 '/hazel.rpc.LidarService/LoadLidarBake',
@@ -120,13 +135,31 @@ class LidarServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetLidarReturnParams(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def SetLidarPreset(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SetLidarSecondaryCapture(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def BakeLidarMaterial(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetLidarBakeStatus(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -185,15 +218,30 @@ def add_LidarServiceServicer_to_server(servicer, server):
                     request_deserializer=lidar__pb2.SetLidarReturnParamsRequest.FromString,
                     response_serializer=lidar__pb2.LidarAck.SerializeToString,
             ),
+            'GetLidarReturnParams': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetLidarReturnParams,
+                    request_deserializer=lidar__pb2.GetLidarReturnParamsRequest.FromString,
+                    response_serializer=lidar__pb2.LidarReturnParamsResponse.SerializeToString,
+            ),
             'SetLidarPreset': grpc.unary_unary_rpc_method_handler(
                     servicer.SetLidarPreset,
                     request_deserializer=lidar__pb2.SetLidarPresetRequest.FromString,
+                    response_serializer=lidar__pb2.LidarAck.SerializeToString,
+            ),
+            'SetLidarSecondaryCapture': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetLidarSecondaryCapture,
+                    request_deserializer=lidar__pb2.SetLidarSecondaryCaptureRequest.FromString,
                     response_serializer=lidar__pb2.LidarAck.SerializeToString,
             ),
             'BakeLidarMaterial': grpc.unary_unary_rpc_method_handler(
                     servicer.BakeLidarMaterial,
                     request_deserializer=lidar__pb2.BakeLidarMaterialRequest.FromString,
                     response_serializer=lidar__pb2.LidarAck.SerializeToString,
+            ),
+            'GetLidarBakeStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetLidarBakeStatus,
+                    request_deserializer=lidar__pb2.LidarSensorRequest.FromString,
+                    response_serializer=lidar__pb2.LidarBakeStatusResponse.SerializeToString,
             ),
             'LoadLidarBake': grpc.unary_unary_rpc_method_handler(
                     servicer.LoadLidarBake,
@@ -341,6 +389,33 @@ class LidarService:
             _registered_method=True)
 
     @staticmethod
+    def GetLidarReturnParams(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hazel.rpc.LidarService/GetLidarReturnParams',
+            lidar__pb2.GetLidarReturnParamsRequest.SerializeToString,
+            lidar__pb2.LidarReturnParamsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def SetLidarPreset(request,
             target,
             options=(),
@@ -356,6 +431,33 @@ class LidarService:
             target,
             '/hazel.rpc.LidarService/SetLidarPreset',
             lidar__pb2.SetLidarPresetRequest.SerializeToString,
+            lidar__pb2.LidarAck.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetLidarSecondaryCapture(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hazel.rpc.LidarService/SetLidarSecondaryCapture',
+            lidar__pb2.SetLidarSecondaryCaptureRequest.SerializeToString,
             lidar__pb2.LidarAck.FromString,
             options,
             channel_credentials,
@@ -384,6 +486,33 @@ class LidarService:
             '/hazel.rpc.LidarService/BakeLidarMaterial',
             lidar__pb2.BakeLidarMaterialRequest.SerializeToString,
             lidar__pb2.LidarAck.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetLidarBakeStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hazel.rpc.LidarService/GetLidarBakeStatus',
+            lidar__pb2.LidarSensorRequest.SerializeToString,
+            lidar__pb2.LidarBakeStatusResponse.FromString,
             options,
             channel_credentials,
             insecure,

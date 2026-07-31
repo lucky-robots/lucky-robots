@@ -1,4 +1,4 @@
-"""Pydantic models for LuckyRobots."""
+"""Observation, camera-frame and benchmarking types for LuckyRobots."""
 
 from luckyrobots.models.benchmark import BenchmarkResult as BenchmarkResult
 from luckyrobots.models.benchmark import FPS as FPS

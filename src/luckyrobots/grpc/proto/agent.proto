@@ -30,8 +30,8 @@ message GetAgentSchemaResponse {
     AgentSchema schema = 1;
 }
 
-// Simulation contract between luckylab and LuckyEngine.
-// Defines domain randomization, command ranges, and other shared parameters.
+// Domain randomization, command ranges and other shared parameters, sent with ResetAgentRequest and
+// carried on a TaskContract so a run's randomisation is declared up front rather than applied ad hoc.
 // All range fields are [min, max] pairs. Empty ranges mean "use defaults".
 message SimulationContract {
     // Initial state randomization
@@ -81,15 +81,16 @@ message ResetAgentResponse {
     string message = 2;
 }
 
-// Agent observation stream frame.
-// This stream is server->client; external actions are currently sent via MujocoService.SendControl.
+// Agent observation frame. Server->client only: there is no action channel on this message. Actions go
+// back either with AgentService.Step (the lock-step path) or MujocoSceneService.SetControl.
 message AgentFrame {
     // Wall-clock timestamp in milliseconds (set by server on outgoing frames)
     uint64 timestamp_ms = 1;
     // Monotonic frame counter (set by server on outgoing frames)
     uint32 frame_number = 2;
 
-    // Flat observation vector for this frame, as defined by the Agent's ObservationSpec.
+    // Flat observation vector for this frame. Its length and per-entry meaning come from
+    // AgentSchema (GetAgentSchema), or from the negotiated task session once a contract is in force.
     repeated float observations = 3;
 
     // Flat action vector for this frame.
@@ -168,8 +169,9 @@ message SetActionGroupResponse {
 }
 
 // Request to step the simulation with the provided action.
-// This is the recommended interface for RL training - it combines
-// SendControl + physics step + GetObservation into a single RPC.
+// The recommended interface for RL training: it applies the action, advances the simulation by exactly
+// one control tick, and returns the resulting observation — all in one round trip, so the client never
+// has to interleave a separate write and read against a running sim.
 message StepRequest {
     // Agent logical name. Empty means default agent.
     string agent_name = 1;
@@ -470,9 +472,9 @@ service AgentService {
     rpc NegotiateTask(NegotiateTaskRequest) returns (NegotiateTaskResponse);
 
     // ------------------------------------------------------------------------
-    // Robot Controller / Policy RPCs (multi-slot PolicySlot + MotionGraph)
-    // Added by mick/policy-redo. Coexists with the action-group / task-contract
-    // surface above; clients pick whichever model fits.
+    // Robot Controller / Policy RPCs (multi-slot PolicySlot + MotionGraph).
+    // An alternative to the action-group / task-contract surface above rather
+    // than a replacement — the two coexist, so pick whichever model fits.
     // ------------------------------------------------------------------------
     rpc ListRobotControllers(ListRobotControllersRequest) returns (ListRobotControllersResponse);
     rpc GetRobotController(GetRobotControllerRequest) returns (GetRobotControllerResponse);

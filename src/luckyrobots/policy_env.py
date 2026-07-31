@@ -1,7 +1,9 @@
 """Gymnasium-compatible env where actions are *commands* into a PolicySlot.
 
-Sibling to LuckyEnv. Whereas LuckyEnv treats actions as raw mujoco ctrl
-values (low-level joint torques), PolicyEnv treats actions as scalar
+Sibling to LuckyEnv. Whereas LuckyEnv treats actions as raw mujoco ctrl values
+(one per actuator — what a value means depends on the actuator type in the
+model, and the stock robots use position actuators, so it is a joint target),
+PolicyEnv treats actions as scalar
 commands fed into a PolicySlot's CommandStore. Use this for training a
 high-level controller that *issues commands to* a fixed lower-level
 PolicyRuntime — e.g. a navigation policy emitting (vx, vy, yaw_rate)
@@ -304,9 +306,11 @@ class PolicyEnv(_BASE):  # type: ignore[misc,valid-type]
             options: Reserved for future use.
 
         Returns:
-            ``(initial_obs, info)`` — the initial observation is taken from
-            the policy's most recent inference (or zero-filled if nothing
-            has been inferred yet).
+            ``(initial_obs, info)`` — the initial observation is built without
+            advancing physics, and its source depends on ``observation_mode``:
+            ``"full_state_filtered"`` concatenates ``[qpos | qvel]`` from the
+            slot-filtered scene state; otherwise it is the policy's most recent
+            inference, zero-filled if nothing has been inferred yet.
         """
         if _HAS_GYMNASIUM:
             super().reset(seed=seed)

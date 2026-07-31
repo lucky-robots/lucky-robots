@@ -4,8 +4,8 @@ Outputs:
   - gRPC services advertised by the server (via reflection.list_services)
   - Whether the policy RPCs are available (via reflection.has_rpc)
   - A snapshot of every RobotControllerComponent + slot states
-  - A 1-frame MujocoScene state summary
-  - A 1-row table of actuator gains (neutralized flag highlighted)
+  - MuJoCo model dimensions (nq/nv/nu/njnt) plus per-joint policy / RL-agent ownership
+  - Neutralized actuators, if any (name + gainprm[0], first 10 shown)
 """
 
 from __future__ import annotations

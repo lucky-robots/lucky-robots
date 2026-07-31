@@ -52,6 +52,12 @@ message LidarConfigResponse {
     float  rotation_hz = 9;
     uint32 geom_group_mask = 10;
     uint32 self_ignore = 11;
+    // What the beam does past its first hit when the sensor RECORDS. These do not gate the live
+    // GetLidarScan secondary channel, which is resolved from the loaded material bake instead — a live
+    // want_secondary works with capture off, and comes back empty only with no bake loaded or with
+    // max_returns below 2.
+    uint32 secondary_capture = 12;  // 0 = off, 1 = pass-through, 2 = reflected, 3 = both
+    uint32 secondary_scope = 13;    // 0 = flagged materials only, 1 = all surfaces
 }
 
 // Return / noise model parameters (range falloff, reflectivity, and per-beam noise).
@@ -65,6 +71,45 @@ message SetLidarReturnParamsRequest {
     float detect_floor = 7;
     float near_range_r0 = 8;
     float noise_slope_per_m = 9;
+
+    // Surface-optics terms. These are `optional` so the server can tell "not sent" from "sent as 0" — the
+    // message is a full replace, so a field you omit keeps its current value instead of being reset to zero.
+    // Send only what you want to change; sending 0 explicitly does mean zero.
+    optional float spec_slope_floor = 10;       // min RMS surface slope (rad); nothing mounted is optically flat
+    optional float spec_peak_max = 11;          // receiver saturation ceiling on the specular term
+    optional float retro_gain = 12;             // retroreflector brightness vs a perfect Lambertian (~800 for signage)
+    optional float retro_cos_exp = 13;          // retroreflector entrance-angle falloff
+    optional float fold_max_slope = 14;         // above this RMS slope a specular surface returns no coherent phantom
+    optional float range_floor = 15;            // positivity guard on the noisy range; NOT the sensor's min range
+    optional float min_return_separation = 16;  // echo dead zone, metres
+    optional uint32 max_returns = 17;           // hardware echoes per beam (Unitree L1, Livox Mid-360 = 1)
+}
+
+message GetLidarReturnParamsRequest {}
+
+// The model currently in effect, field-for-field with SetLidarReturnParamsRequest. Where the setter's optics
+// fields are optional, these are always reported, so terms you never set come back as the server's resolved
+// defaults — read this to see what the sensor is actually running before you change it. Worth checking
+// `max_returns`: at 1 the hardware resolves a single echo per beam, so a secondary-return request still
+// comes back full length, carrying -1 (no ghost) on every beam, however it is scoped.
+message LidarReturnParamsResponse {
+    float max_range_at_ref = 1;
+    float ref_reflectivity = 2;
+    float range_exp = 3;
+    float noise_sigma0 = 4;
+    float grazing_cos_cutoff = 5;
+    float intensity_ref_range = 6;
+    float detect_floor = 7;
+    float near_range_r0 = 8;
+    float noise_slope_per_m = 9;
+    float spec_slope_floor = 10;
+    float spec_peak_max = 11;
+    float retro_gain = 12;
+    float retro_cos_exp = 13;
+    float fold_max_slope = 14;
+    float range_floor = 15;
+    float min_return_separation = 16;
+    uint32 max_returns = 17;
 }
 
 message SetLidarPresetRequest {
@@ -72,7 +117,36 @@ message SetLidarPresetRequest {
 }
 
 message BakeLidarMaterialRequest {
-    float cell_size = 1;           // voxel size in metres
+    float cell_size = 1;           // voxel size in metres; <= 0 uses the scene's own setting
+    // The remaining bake settings. Each falls back to the scene's authored setting when left at 0, so setting
+    // cell_size alone is enough for most callers. Splat radius is the one worth setting explicitly: at 0 the
+    // bake fills only the cells a triangle crosses while the lookup is nearest-cell, which leaves about 27.5%
+    // of rays missing the bake, against 1.3% at radius 1.
+    int32 max_dim = 2;             // cap on cells per axis; 0 = scene setting
+    int32 splat_radius = 3;        // -1 = explicitly 0, 0 = scene setting, else the radius
+    uint32 include_hidden = 4;     // 0 = scene setting, 1 = include, 2 = exclude
+}
+
+message LidarBakeStatusResponse {
+    bool  valid = 1;                 // false when nothing is baked or loaded
+    uint32 format_version = 2;       // .lvxb layout the data came from; older ones cannot express everything
+    float cell_size_m = 3;
+    int32 splat_radius = 4;
+    uint32 dim_x = 5;
+    uint32 dim_y = 6;
+    uint32 dim_z = 7;
+    uint64 filled_cells = 8;
+    uint64 geom_materials = 9;       // size of the geom-keyed table; 0 = positional lookup only
+    uint64 material_fingerprint = 10;
+    // True when the bake no longer matches the scene's materials, or was written by an older format. A stale
+    // bake silently reports the materials AS THEY WERE WHEN BAKED — the editor refuses to export against one.
+    bool  stale = 11;
+}
+
+message SetLidarSecondaryCaptureRequest {
+    uint32 sensor = 1;
+    uint32 capture = 2;            // 0 = off, 1 = pass-through, 2 = reflected (mirror fold), 3 = both
+    uint32 scope = 3;              // 0 = flagged materials only (much faster), 1 = all surfaces
 }
 
 message LoadLidarBakeRequest {
@@ -87,6 +161,9 @@ message GetLidarScanRequest {
     uint32 sensor = 1;
     bool   material = 2;           // true = dirty the ranges via the baked material LUT + return model
     bool   want_secondary = 3;     // also fill secondary_ranges (glass/water ghost behind the first hit)
+    // Also fill intensity + reflectivity_calibrated. Requires material=true to be meaningful: without the
+    // material model there is no return strength to report, only geometry.
+    bool   want_intensity = 4;
 }
 
 message LidarScanResponse {
@@ -95,6 +172,15 @@ message LidarScanResponse {
     // Opt-in multi-return: secondary (ghost) range per beam behind a glass/clear-water first hit; -1 = none.
     // Empty unless the request set want_secondary. Same length as `ranges` when present.
     repeated float secondary_ranges = 3 [packed = true];
+    // Opt-in per-beam return strength, the same two channels the offline material export writes per point.
+    // Empty unless the request set want_intensity; same length as `ranges` when present. -1 = not resolvable
+    // (no strength could be resolved: material was false, no bake is loaded, or the beam had no return —
+    // in which case its `ranges` entry is -1 as well). Every real value is >= 0, so -1 is safe to filter on.
+    // intensity carries the 1/R^2 falloff and the near-range overlap factor, so it saturates close in.
+    // reflectivity_calibrated is range-compensated, in multiples of a perfect Lambertian at normal incidence
+    // — that is the channel to compare across ranges when judging materials.
+    repeated float intensity = 4 [packed = true];
+    repeated float reflectivity_calibrated = 5 [packed = true];
 }
 
 message LidarBeamCountResponse {
@@ -115,8 +201,11 @@ service LidarService {
     rpc SetLidarConfig(SetLidarConfigRequest) returns (LidarAck);
     rpc GetLidarConfig(LidarSensorRequest) returns (LidarConfigResponse);
     rpc SetLidarReturnParams(SetLidarReturnParamsRequest) returns (LidarAck);
+    rpc GetLidarReturnParams(GetLidarReturnParamsRequest) returns (LidarReturnParamsResponse);
     rpc SetLidarPreset(SetLidarPresetRequest) returns (LidarAck);
+    rpc SetLidarSecondaryCapture(SetLidarSecondaryCaptureRequest) returns (LidarAck);
     rpc BakeLidarMaterial(BakeLidarMaterialRequest) returns (LidarAck);
+    rpc GetLidarBakeStatus(LidarSensorRequest) returns (LidarBakeStatusResponse);
     rpc LoadLidarBake(LoadLidarBakeRequest) returns (LidarAck);
     rpc SaveLidarBake(SaveLidarBakeRequest) returns (LidarAck);
     rpc GetLidarScan(GetLidarScanRequest) returns (LidarScanResponse);

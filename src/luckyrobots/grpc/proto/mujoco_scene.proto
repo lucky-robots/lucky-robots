@@ -2,16 +2,18 @@ syntax = "proto3";
 
 // MujocoSceneService — engine-wide, low-level MuJoCo access.
 //
-// Unlike `MujocoService` (in hazel_rpc.proto), which is scoped to the joints
+// Unlike `MujocoService` (in mujoco.proto), which is scoped to the joints
 // and actuators that a registered `RobotAgent` has declared, this service
 // exposes the *entire* loaded mjModel/mjData. Use it to:
 //   - Enumerate every joint, actuator, and their limits/types
 //   - Read the complete qpos / qvel / ctrl vectors
 //   - Drive arbitrary actuators by index or by name
 //
-// Safety: write RPCs refuse to clobber actuators that are currently owned by
-// an active external RL agent (SetControl returns FAILED_PRECONDITION). Reads
-// are always safe. See `MujocoSceneServiceImpl.cs` for the gating rules.
+// Safety: write RPCs refuse to clobber actuators currently owned by an active RL agent or
+// PolicySlot. The refusal is per-actuator and is NOT an error status — SetControl still returns
+// success and lists the skipped names in `rejected_actuators`, so check that field rather than the
+// status code. Reads are always safe. See SetControlRequest / SetControlResponse below for the
+// exact per-actuator rules.
 
 package hazel.rpc;
 
@@ -61,7 +63,7 @@ message ActuatorDescriptor {
     // mjTRN_JOINTINPARENT). Tendon-, site-, and body-transmitted actuators
     // always report 0 here even if a policy could indirectly influence them
     // through the joints they cascade onto. The same caveat applies to the
-    // SetControl safety gate (`IsActuatorClaimedByPolicy`) — a tendon-driven
+    // SetControl safety gate — a tendon-driven
     // actuator is NOT auto-rejected by SetControl. Manage at the joint level
     // via SetPolicyDrivenJoints if you need that gating.
     uint32 claimed_by_policy_slot_id = 7;
@@ -173,7 +175,7 @@ message IndexedControlEntry {
 //     authoritative control over their joints and a silent passthrough would
 //     be a debug footgun.
 //   * If the actuator is driven by an active MotionGraph, the write lands in
-//     mjData.ctrl[i] but the next RecalculateControls tick will overwrite it
+//     mjData.ctrl[i] but the next control tick will overwrite it
 //     with the graph-synthesized value. This is intentional — it lets you
 //     "nudge" a graph-driven joint for a sub-tick. For a persistent write,
 //     call SetMotionGraphActive(entity, false) first (so the graph stops
@@ -279,7 +281,7 @@ message GetActuatorGainsResponse {
 //
 // Recording behaviour: recording continues across the reset by design (this is
 // often used for mid-episode recovery from a learned state). The first frame
-// captured after the reset has FrameFlag::PostReset (= 0x02) set in the
+// captured after the reset has the post_reset bit (= 0x02) set in the
 // frame_flags column so consumers that don't want the qpos/ctrl discontinuity
 // can drop it.
 message ResetSceneRequest {

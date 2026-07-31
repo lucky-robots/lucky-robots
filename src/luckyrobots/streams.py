@@ -1,9 +1,11 @@
-"""Timestamp-aligned multiplexer over multiple gRPC server-streams.
+"""Latest-value multiplexer over multiple gRPC server-streams.
 
 Combines N concurrent streams (e.g. StreamRobotController + StreamFullState
-+ StreamCamera) into a single iterator of synchronized frames. Useful for
-dataset collection where you want each yielded item to contain the latest
-update from each source as of a common timestamp.
++ StreamCamera) into a single iterator. Each yielded dict holds the most recent
+item seen on each stream at that tick — the streams are polled on a fixed
+period, not aligned by timestamp, and a source that has produced nothing yet
+comes back as None. Useful for dataset collection where you want one row per
+tick with whatever each source last reported.
 
 Usage:
     from luckyrobots.streams import StreamMultiplexer
@@ -11,7 +13,8 @@ Usage:
     mux.add("robot", session.engine_client.agent.StreamRobotController(req1))
     mux.add("state", session.engine_client.mujoco_scene.StreamFullState(req2))
     for batch in mux.run(period_s=0.05, timeout_s=10.0):
-        # batch is a dict like {"robot": <RobotControllerSummary>, "state": <FullState>}
+        # batch is a dict like {"robot": <RobotControllerSummary>, "state": <GetFullStateResponse>}
+        # (qpos/qvel/ctrl live one level down, under batch["state"].state)
         ...
 """
 from __future__ import annotations
@@ -26,7 +29,7 @@ logger = logging.getLogger("luckyrobots.streams")
 
 
 class StreamMultiplexer:
-    """Merge multiple server-streams into one timestamp-aligned iterator."""
+    """Merge multiple server-streams into one fixed-cadence iterator of latest values."""
 
     def __init__(self) -> None:
         self._queues: Dict[str, "queue.Queue[Any]"] = {}

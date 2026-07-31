@@ -1,8 +1,8 @@
 """
-Remote mirror of LuckyEditor/RobotSandbox/Assets/Scripts/Source/DualPolicyExample.cs.
-
 Drives two PolicySlots on a single robot over gRPC:
-  * Walker  — SetVx command, owns leg+waist joints (higher priority -> primary).
+  * Walker  — SetVx command, owns leg+waist joints. Give it the LOWER priority
+    value: slots merge in ascending priority, so the lowest runs first as the
+    primary and the rest apply as overlays over their own driven joints.
   * Rotator — SetYawRate command, owns arm joints only (via DrivenJoints mask).
 
 Expected engine state before running:
@@ -78,7 +78,8 @@ def main() -> None:
                           f"driven_joints={len(s.driven_joints)}")
             time.sleep(0.05)
 
-        # 5) Mid-run mask change on the Rotator — exercises the reseed-on-claim path.
+        # 5) DrivenJoints can be changed while a slot runs: joints dropped from the
+        #    mask go back to the motion graph, and newly claimed ones are reseeded.
         print("[dual_policy] Narrowing rotator to right_arm_* only …")
         robot.set_driven_joints("Rotator", ["right_arm_*"])
         time.sleep(0.5)

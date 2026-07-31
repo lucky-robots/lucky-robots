@@ -14,6 +14,9 @@ class CameraFrame:
     height: int
     channels: int
     frame_number: int
+    # Depth frames only: metres per uint16 code, so `metres = code * depth_scale`. 0 on colour
+    # frames. Without it a gray16 depth frame is only uncalibrated integers.
+    depth_scale: float = 0.0
 
 
 class ObservationResponse(BaseModel):
@@ -28,9 +31,11 @@ class ObservationResponse(BaseModel):
         # Flat vector for RL training
         obs.observation  # [0.1, 0.2, 0.3, ...]
 
-        # Named access (if schema was fetched)
-        obs["proj_grav_x"]  # 0.1
-        obs.to_dict()  # {"proj_grav_x": 0.1, "proj_grav_y": 0.2, ...}
+        # Named access (if schema was fetched). Names come from the agent's observation
+        # spec, one per term rather than one per scalar, so a 12-joint "joint_pos" block
+        # is a single name covering 12 entries of the flat vector above.
+        obs["projected_gravity"]  # 0.1
+        obs.to_dict()  # {"base_lin_vel": 0.1, "projected_gravity": 0.2, ...}
     """
 
     model_config = ConfigDict(frozen=True)
@@ -83,7 +88,8 @@ class ObservationResponse(BaseModel):
         """Access observation value by name.
 
         Args:
-            key: Observation name (e.g., "proj_grav_x", "joint_pos_0").
+            key: Observation name from the agent schema (e.g., "projected_gravity",
+                "joint_pos"). Names are per observation term, not per scalar.
 
         Returns:
             The observation value.

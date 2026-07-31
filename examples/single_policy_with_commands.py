@@ -4,7 +4,9 @@ Drive a single PolicySlot with a sweeping SetVx command.
 Connects to a running LuckyEngine, finds the first robot with a
 RobotControllerComponent, picks the slot named ``Walker`` (or the first
 slot if no Walker is present), activates it, and issues a sinusoidal
-``SetVx`` command for 200 simulation ticks. Live state snapshots are
+``SetVx`` command over 200 iterations paced at 20 Hz (~10 s of wall clock).
+The loop only sends commands — the engine keeps stepping physics on its own
+clock, so an iteration is not one physics step. Live state snapshots are
 printed every 50 steps so the operator can confirm the slot is ready
 and the driven-joints mask matches the configured policy.
 

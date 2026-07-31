@@ -6,7 +6,7 @@ import warnings
 from . import camera_pb2 as camera__pb2
 from . import media_pb2 as media__pb2
 
-GRPC_GENERATED_VERSION = '1.80.0'
+GRPC_GENERATED_VERSION = '1.82.1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -26,7 +26,7 @@ if _version_not_supported:
     )
 
 
-class CameraServiceStub(object):
+class CameraServiceStub:
     """Streams pixels from a camera entity (useful for external perception / debugging).
     """
 
@@ -46,9 +46,19 @@ class CameraServiceStub(object):
                 request_serializer=camera__pb2.StreamCameraRequest.SerializeToString,
                 response_deserializer=media__pb2.ImageFrame.FromString,
                 _registered_method=True)
+        self.GetCameraConfig = channel.unary_unary(
+                '/hazel.rpc.CameraService/GetCameraConfig',
+                request_serializer=camera__pb2.GetCameraConfigRequest.SerializeToString,
+                response_deserializer=camera__pb2.CameraConfigResponse.FromString,
+                _registered_method=True)
+        self.SetCameraConfig = channel.unary_unary(
+                '/hazel.rpc.CameraService/SetCameraConfig',
+                request_serializer=camera__pb2.SetCameraConfigRequest.SerializeToString,
+                response_deserializer=camera__pb2.CameraConfigAck.FromString,
+                _registered_method=True)
 
 
-class CameraServiceServicer(object):
+class CameraServiceServicer:
     """Streams pixels from a camera entity (useful for external perception / debugging).
     """
 
@@ -59,6 +69,18 @@ class CameraServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def StreamCamera(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetCameraConfig(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetCameraConfig(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -77,6 +99,16 @@ def add_CameraServiceServicer_to_server(servicer, server):
                     request_deserializer=camera__pb2.StreamCameraRequest.FromString,
                     response_serializer=media__pb2.ImageFrame.SerializeToString,
             ),
+            'GetCameraConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCameraConfig,
+                    request_deserializer=camera__pb2.GetCameraConfigRequest.FromString,
+                    response_serializer=camera__pb2.CameraConfigResponse.SerializeToString,
+            ),
+            'SetCameraConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetCameraConfig,
+                    request_deserializer=camera__pb2.SetCameraConfigRequest.FromString,
+                    response_serializer=camera__pb2.CameraConfigAck.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'hazel.rpc.CameraService', rpc_method_handlers)
@@ -85,7 +117,7 @@ def add_CameraServiceServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class CameraService(object):
+class CameraService:
     """Streams pixels from a camera entity (useful for external perception / debugging).
     """
 
@@ -133,6 +165,60 @@ class CameraService(object):
             '/hazel.rpc.CameraService/StreamCamera',
             camera__pb2.StreamCameraRequest.SerializeToString,
             media__pb2.ImageFrame.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetCameraConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hazel.rpc.CameraService/GetCameraConfig',
+            camera__pb2.GetCameraConfigRequest.SerializeToString,
+            camera__pb2.CameraConfigResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetCameraConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hazel.rpc.CameraService/SetCameraConfig',
+            camera__pb2.SetCameraConfigRequest.SerializeToString,
+            camera__pb2.CameraConfigAck.FromString,
             options,
             channel_credentials,
             insecure,

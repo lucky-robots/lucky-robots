@@ -1,8 +1,10 @@
 """Event-style observer over StreamRobotController.
 
 Subscribes to per-frame RobotControllerSummary updates from the engine and
-emits high-level events when state changes are detected. Designed to be
-single-threaded and asyncio-friendly.
+emits high-level events when state changes are detected. Single-threaded:
+iterating blocks whichever thread drives it, so either drive the iterator
+yourself or call run_in_thread() for a daemon thread that drives it and
+dispatches the callbacks. There is no async iteration.
 
 Usage (sync, helper thread):
     mon = PolicyMonitor(session, entity_id=robot.entity_id)
@@ -99,7 +101,7 @@ class PolicyMonitor:
                 self._dispatch(frame)
                 yield frame
         except Exception as e:
-            # grpc.RpcError, OperationCanceledException, etc. — terminate cleanly.
+            # grpc.RpcError (CANCELLED is the normal stop() path) — terminate cleanly.
             logger.debug("PolicyMonitor stream ended: %s", e)
         finally:
             self._stream_call = None

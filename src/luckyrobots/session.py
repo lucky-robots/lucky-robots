@@ -56,14 +56,16 @@ class Session:
             robot: Robot name (must exist in `robots.yaml`).
             task: Task name (must exist in `robots.yaml`).
             executable_path: Path to LuckyEngine executable (optional; auto-detected).
-            observation_type: Used for validation and optional camera processing.
+            observation_type: Accepted for forward compatibility but currently
+                unused — nothing in start() reads it. Configure cameras with
+                configure_cameras() instead.
             headless: Launch without rendering.
             timeout_s: How long to wait for gRPC server to come up.
             task_contract: Optional task contract dict for engine-side MDP computation.
                 When provided, the engine is configured to compute reward signals
                 and termination flags alongside observations. Pass a dict with
-                observations, rewards, terminations sections — see LuckyEnv or
-                luckylab.contracts.TaskContract.to_dict() for the expected format.
+                observations, rewards, terminations sections — see LuckyEnv, or the
+                task-contract section of the README, for the expected format.
         """
         self._robot_name = robot
 
@@ -383,7 +385,7 @@ class Session:
             break
 
         # Step with zero actions to get the initial observation after reset.
-        # Query the agent schema for the correct action size (cached after first call).
+        # Query the agent schema for the correct action size (one RPC per reset).
         schema = client.get_agent_schema(agent_name=agent_name)
         action_size = schema.schema.action_size if schema.schema else 12
         return client.step(actions=[0.0] * action_size, agent_name=agent_name)
@@ -419,7 +421,7 @@ class Session:
         """Access the underlying LuckyEngine gRPC client for advanced operations."""
         return self._engine_client
 
-    # ── Policy / scene convenience surface (consolidator additions) ──────────
+    # ── Policy / scene convenience surface ──────────────────────────────────
     # Each method is a thin forward to the high-level wrappers introduced by
     # the parallel SDK rollout. Imports are deferred to the call site to avoid
     # circular-import issues at package load time.

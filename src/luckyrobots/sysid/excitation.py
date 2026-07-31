@@ -50,7 +50,8 @@ def multisine(
         duration: Total duration in seconds.
         dt: Timestep in seconds.
         frequencies: List of frequencies in Hz. Defaults to [0.5, 1.0, 2.0, 3.5].
-        amplitude: Signal amplitude per component.
+        amplitude: Peak amplitude budget for the summed signal; each frequency
+            component gets amplitude / len(frequencies).
         num_joints: Number of joints/actuators.
 
     Returns:
